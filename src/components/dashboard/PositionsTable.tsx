@@ -13,7 +13,7 @@ export function PositionsTable({ onOpenSpot }: { onOpenSpot: (id: string) => voi
           <THead>
             <tr>
               <Th>Account</Th>
-              <Th>Cluster</Th>
+              <Th>Client</Th>
               <Th>Day</Th>
               <Th className="text-right">Tied up</Th>
               <Th className="text-right">Fwd EV</Th>

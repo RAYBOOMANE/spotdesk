@@ -2,19 +2,21 @@ import { useState } from "react";
 import { useModals } from "@/hooks/useModals";
 import { useMultiSelect } from "@/hooks/useMultiSelect";
 import { AppShell } from "@/layouts/AppShell";
-import type { ViewKey } from "@/components/layout/Sidebar";
 import { HomeView } from "@/views/HomeView";
 import { OverviewView } from "@/views/OverviewView";
 import { ClustersView } from "@/views/ClustersView";
 import { LogView } from "@/views/LogView";
 import { HistoryView } from "@/views/HistoryView";
+import { PlaceholderView } from "@/views/PlaceholderView";
 import { LogModal } from "@/components/modals/LogModal";
 import { MultiLogModal } from "@/components/modals/MultiLogModal";
 import { DayDetailModal } from "@/components/modals/DayDetailModal";
 import { CapacityModal } from "@/components/modals/CapacityModal";
+import { defaultTab, type Department } from "@/config/departments";
 
 export default function App() {
-  const [view, setView] = useState<ViewKey>("home");
+  const [screen, setScreen] = useState<"home" | Department>("home");
+  const [tab, setTab] = useState<string>("overview");
   const { multiSel, toggleSelect, clearSelection } = useMultiSelect();
   const {
     logId,
@@ -31,12 +33,28 @@ export default function App() {
     closeCap,
   } = useModals();
 
+  const enterDepartment = (d: Department) => {
+    setScreen(d);
+    setTab(defaultTab(d));
+  };
+
+  if (screen === "home") {
+    return <HomeView onSelectDepartment={enterDepartment} />;
+  }
+
+  const department = screen;
+
   return (
     <>
-      <AppShell active={view} onNavigate={setView}>
-        {view === "home" && <HomeView onNavigate={setView} />}
-        {view === "overview" && <OverviewView onCapacityClick={openCap} />}
-        {view === "clusters" && (
+      <AppShell
+        department={department}
+        tab={tab}
+        onTabChange={setTab}
+        onSwitchDepartment={enterDepartment}
+        onHome={() => setScreen("home")}
+      >
+        {department === "trading-floor" && tab === "overview" && <OverviewView onCapacityClick={openCap} />}
+        {department === "trading-floor" && tab === "clients" && (
           <ClustersView
             selected={multiSel}
             onToggleSelect={toggleSelect}
@@ -45,8 +63,30 @@ export default function App() {
             onClearSelection={clearSelection}
           />
         )}
-        {view === "log" && <LogView />}
-        {view === "history" && <HistoryView onOpenDay={openDay} />}
+        {department === "trading-floor" && tab === "now-trading" && (
+          <PlaceholderView
+            title="Now Trading"
+            description="Pick up to 10 clients/accounts you're actively trading for fast quick-logging across all of them."
+          />
+        )}
+        {department === "trading-floor" && tab === "log" && <LogView />}
+        {department === "trading-floor" && tab === "history" && <HistoryView onOpenDay={openDay} />}
+
+        {department === "ceo-office" && (
+          <PlaceholderView
+            title="CEO Office"
+            description="All-time performance, managers, money held, and objectives."
+          />
+        )}
+        {department === "accounting" && (
+          <PlaceholderView
+            title="Accounting"
+            description="A financial ledger generated from Trading Floor activity."
+          />
+        )}
+        {department === "secretary" && (
+          <PlaceholderView title="Secretary" description="To-do lists and operational follow-ups." />
+        )}
       </AppShell>
 
       <LogModal id={logId} onClose={closeLog} />

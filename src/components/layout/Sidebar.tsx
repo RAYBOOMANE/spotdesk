@@ -1,36 +1,41 @@
-import type { ComponentType } from "react";
-import { History, House, LayoutDashboard, LayoutGrid, ScrollText } from "lucide-react";
+import { DEPARTMENT_TABS, type Department } from "@/config/departments";
+import { DepartmentSwitcher } from "@/components/layout/DepartmentSwitcher";
 import { cn } from "@/lib/utils";
 
-export type ViewKey = "home" | "overview" | "clusters" | "log" | "history";
-
-const NAV_ITEMS: { key: ViewKey; label: string; icon: ComponentType<{ className?: string }> }[] = [
-  { key: "home", label: "Home", icon: House },
-  { key: "overview", label: "Overview", icon: LayoutDashboard },
-  { key: "clusters", label: "Clusters", icon: LayoutGrid },
-  { key: "log", label: "Log", icon: ScrollText },
-  { key: "history", label: "History", icon: History },
-];
-
 export function Sidebar({
-  active,
-  onNavigate,
+  department,
+  tab,
+  onTabChange,
+  onSwitchDepartment,
+  onHome,
 }: {
-  active: ViewKey;
-  onNavigate: (view: ViewKey) => void;
+  department: Department;
+  tab: string;
+  onTabChange: (tab: string) => void;
+  onSwitchDepartment: (d: Department) => void;
+  onHome: () => void;
 }) {
+  const tabs = DEPARTMENT_TABS[department];
+
   return (
     <nav className="flex w-56 shrink-0 flex-col border-r border-line bg-panel px-3 py-5">
-      <div className="mb-6 px-2 text-sm font-bold tracking-tight text-ink">
+      <button
+        onClick={onHome}
+        className="mb-6 px-2 text-left text-sm font-bold tracking-tight text-ink transition-colors hover:text-dim"
+        title="Back to Welcome"
+      >
         SPOT<span className="text-dim">DESK</span>
-      </div>
+      </button>
+
+      <DepartmentSwitcher active={department} onSelect={onSwitchDepartment} />
+
       <ul className="flex flex-col gap-1">
-        {NAV_ITEMS.map(({ key, label, icon: Icon }) => {
-          const isActive = active === key;
+        {tabs.map(({ key, label, icon: Icon }) => {
+          const isActive = tab === key;
           return (
             <li key={key}>
               <button
-                onClick={() => onNavigate(key)}
+                onClick={() => onTabChange(key)}
                 aria-current={isActive ? "page" : undefined}
                 className={cn(
                   "flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors",

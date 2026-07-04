@@ -55,19 +55,19 @@ export function CapacityModal({ open, onClose }: { open: boolean; onClose: () =>
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-[480px]">
-        <DialogTitle>Capacity & clusters</DialogTitle>
+        <DialogTitle>Capacity & clients</DialogTitle>
         <DialogDescription>
-          Set your real capacity (grid size) and name each cluster. Capacity % = live spots ÷ (clusters ×
+          Set your real capacity (grid size) and name each client. Capacity % = live spots ÷ (clients ×
           accounts).
         </DialogDescription>
 
         <div className="mb-4 grid grid-cols-2 gap-2.5">
           <div>
-            <Label>Clusters</Label>
+            <Label>Clients</Label>
             <Input inputMode="numeric" value={cc} onChange={(e) => setCc(e.target.value)} />
           </div>
           <div>
-            <Label>Accounts per cluster</Label>
+            <Label>Accounts per client</Label>
             <Input inputMode="numeric" value={ca} onChange={(e) => setCa(e.target.value)} />
           </div>
         </div>
@@ -88,7 +88,7 @@ export function CapacityModal({ open, onClose }: { open: boolean; onClose: () =>
           )}
         </div>
 
-        <Label>Cluster names</Label>
+        <Label>Client names</Label>
         <div className="mb-4 grid max-h-[260px] grid-cols-2 gap-1.5 overflow-y-auto pr-1">
           {Array.from({ length: ccN }, (_, i) => i + 1).map((c) => (
             <div key={c} className="flex items-center gap-1.5">

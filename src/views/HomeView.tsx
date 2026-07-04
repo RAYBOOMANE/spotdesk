@@ -1,9 +1,8 @@
-import { History, LayoutDashboard, LayoutGrid, ScrollText } from "lucide-react";
 import { useStore } from "@/store/StoreProvider";
 import { computeTopStats } from "@/lib/stats";
 import { signed } from "@/lib/utils";
 import { CircularNav } from "@/components/layout/CircularNav";
-import type { ViewKey } from "@/components/layout/Sidebar";
+import { DEPARTMENTS, type Department } from "@/config/departments";
 
 function greeting(): string {
   const h = new Date().getHours();
@@ -12,22 +11,20 @@ function greeting(): string {
   return "Good evening.";
 }
 
-const NAV_ITEMS = [
-  { key: "overview" as ViewKey, label: "Overview", icon: LayoutDashboard },
-  { key: "clusters" as ViewKey, label: "Clusters", icon: LayoutGrid },
-  { key: "log" as ViewKey, label: "Log", icon: ScrollText },
-  { key: "history" as ViewKey, label: "History", icon: History },
-];
-
-export function HomeView({ onNavigate }: { onNavigate: (view: ViewKey) => void }) {
+// The Welcome screen — stands alone, full-screen, no sidebar/header/footer
+// chrome. Selecting a department hands off to the AppShell.
+export function HomeView({ onSelectDepartment }: { onSelectDepartment: (d: Department) => void }) {
   const { state } = useStore();
   const s = computeTopStats(state);
   const todayTotal = state.todayProfit + state.todayPayouts;
   const dateLabel = new Date().toLocaleDateString("en-GB", { weekday: "long", day: "2-digit", month: "short" });
 
   return (
-    <div className="flex flex-1 flex-col items-center justify-center gap-10 py-10 text-center">
+    <div className="flex h-screen w-full flex-col items-center justify-center gap-10 bg-void px-6 py-10 text-center text-ink">
       <div>
+        <div className="mb-3 text-sm font-bold tracking-tight text-ink">
+          SPOT<span className="text-dim">DESK</span>
+        </div>
         <h1 className="text-2xl font-semibold tracking-tight text-ink">{greeting()}</h1>
         <p className="mt-1.5 font-mono text-xs text-dim">
           DAY {state.dayCount} · {dateLabel}
@@ -38,8 +35,8 @@ export function HomeView({ onNavigate }: { onNavigate: (view: ViewKey) => void }
       </div>
 
       <CircularNav
-        items={NAV_ITEMS}
-        onSelect={onNavigate}
+        items={DEPARTMENTS}
+        onSelect={onSelectDepartment}
         center={
           <span className="font-mono text-[0.62rem] text-dim">
             DAY

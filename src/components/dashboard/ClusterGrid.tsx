@@ -34,7 +34,7 @@ export function ClusterGrid({
 
   const renameCluster = async (c: number) => {
     const cur = state.names?.[c] ?? "C" + c;
-    const name = await dialogs.prompt("Name for this cluster", cur, "C" + c);
+    const name = await dialogs.prompt("Name for this client", cur, "C" + c);
     if (name === null) return;
     store.renameCluster(c, name);
   };

@@ -20,7 +20,7 @@ export function ClustersView({
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-lg font-semibold tracking-tight text-ink">Clusters</h1>
+        <h1 className="text-lg font-semibold tracking-tight text-ink">Clients</h1>
         <p className="text-sm text-dim">Tap an account to log · tick boxes to copy-trade.</p>
       </div>
 
@@ -32,7 +32,7 @@ export function ClustersView({
       </div>
 
       <div>
-        <SectionHeader>Packages — grouped by cluster color</SectionHeader>
+        <SectionHeader>Packages — grouped by client color</SectionHeader>
         <Packages />
       </div>
 
