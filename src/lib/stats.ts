@@ -1,6 +1,6 @@
 // Derived, read-only stats — mirrors the math inside the reference render().
 
-import { LADDER, PACKAGE_COLORS } from "./ladder";
+import { LADDER, PACKAGE_COLORS, type Zone } from "./ladder";
 import { clusterOf, colorOf, fwdEV, gridDims, netOfLog, PhaseFilter } from "./logic";
 import { N_CLUSTERS, ACCTS_PER_CLUSTER } from "./ladder";
 import type { AppState, LogEntry } from "./types";
@@ -92,6 +92,17 @@ export function phaseCounts(state: AppState): Record<PhaseFilter, number> {
   return counts;
 }
 
+// Live-account counts bucketed by ladder zone (live D1-3 / deep D4-7 / cool D9-13 /
+// gold D8&14 gateway-payout). Informational, not P&L — used for the zone donut.
+export function zoneCounts(state: AppState): Record<Zone, number> {
+  const counts: Record<Zone, number> = { live: 0, deep: 0, cool: 0, gold: 0 };
+  Object.values(state.spots).forEach((sp) => {
+    if (sp.day < 1) return;
+    counts[LADDER[sp.day].zone]++;
+  });
+  return counts;
+}
+
 // Equity curve: cumulative running total of each archived day's banked total.
 export interface EquityPoint {
   day: number;
@@ -177,11 +188,4 @@ export function packageGroups(state: AppState): PackageGroup[] {
       week: g.week,
     };
   });
-}
-
-export function zoneColorVar(day: number): string {
-  if (day >= 8) return "var(--cool)";
-  if (day >= 4) return "var(--deep)";
-  if (day >= 1) return "var(--live)";
-  return "var(--faint)";
 }

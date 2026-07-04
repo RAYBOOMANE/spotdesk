@@ -12,7 +12,7 @@ export function Badge({
 }) {
   return (
     <span
-      className={cn("inline-block rounded-[5px] px-2 py-0.5 font-mono text-[0.58rem] font-bold", className)}
+      className={cn("inline-block rounded-full px-2.5 py-0.5 font-mono text-[0.58rem] font-bold", className)}
       style={color ? { background: color + "22", color } : undefined}
     >
       {children}

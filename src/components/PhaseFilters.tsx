@@ -28,10 +28,10 @@ export function PhaseFilters({
           key={f.key}
           onClick={() => onChange(f.key)}
           className={cn(
-            "rounded-lg border px-3.5 py-1.5 font-mono text-[0.66rem] transition-all",
+            "rounded-lg border px-3.5 py-1.5 font-mono text-[0.66rem] transition-colors",
             value === f.key
-              ? "border-live bg-live font-bold text-[#04110c]"
-              : "border-line2 bg-panel text-dim hover:border-live hover:text-ink"
+              ? "border-ink bg-ink font-bold text-void"
+              : "border-line bg-panel text-dim hover:border-line2 hover:bg-panel2 hover:text-ink"
           )}
         >
           {f.label}

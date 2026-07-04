@@ -1,5 +1,4 @@
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
 
 export function MultiBar({
   count,
@@ -10,20 +9,18 @@ export function MultiBar({
   onLog: () => void;
   onClear: () => void;
 }) {
+  if (count === 0) return null;
   return (
-    <div
-      className={cn(
-        "fixed bottom-4 left-1/2 z-40 flex -translate-x-1/2 items-center gap-2.5 rounded-xl border border-live bg-panel px-3.5 py-2.5 shadow-[0_8px_30px_rgba(0,0,0,0.5)] transition-transform",
-        count > 0 ? "translate-y-0" : "translate-y-[150%]"
-      )}
-    >
-      <span className="font-mono text-[0.7rem] font-bold text-live">{count} selected</span>
-      <Button size="sm" onClick={onLog}>
-        Log selected together
-      </Button>
-      <Button size="sm" variant="ghost" onClick={onClear}>
-        Clear
-      </Button>
+    <div className="sticky bottom-4 z-40 flex justify-center">
+      <div className="flex items-center gap-3 rounded-2xl border border-line2 bg-panel2 px-4 py-3 shadow-cardHover">
+        <span className="font-mono text-[0.7rem] font-bold text-ink">{count} selected</span>
+        <Button size="sm" onClick={onLog}>
+          Log selected together
+        </Button>
+        <Button size="sm" variant="ghost" onClick={onClear}>
+          Clear
+        </Button>
+      </div>
     </div>
   );
 }

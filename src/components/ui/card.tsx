@@ -1,11 +1,21 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 
-const Card = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
-  ({ className, ...props }, ref) => (
+interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
+  /** Force the hover treatment even when onClick isn't on this element itself. */
+  interactive?: boolean;
+}
+
+const Card = React.forwardRef<HTMLDivElement, CardProps>(
+  ({ className, interactive, onClick, ...props }, ref) => (
     <div
       ref={ref}
-      className={cn("rounded-card border border-line bg-panel shadow-card", className)}
+      onClick={onClick}
+      className={cn(
+        "rounded-card border border-line bg-panel shadow-card",
+        (interactive || onClick) && "cursor-pointer transition-colors hover:border-line2 hover:shadow-cardHover",
+        className
+      )}
       {...props}
     />
   )

@@ -12,11 +12,11 @@ const DialogContent = React.forwardRef<
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content>
 >(({ className, children, ...props }, ref) => (
   <DialogPrimitive.Portal>
-    <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-[rgba(4,6,10,0.72)] backdrop-blur-[6px] data-[state=open]:animate-in data-[state=open]:fade-in-0" />
+    <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-void/70 data-[state=open]:animate-in data-[state=open]:fade-in-0" />
     <DialogPrimitive.Content
       ref={ref}
       className={cn(
-        "fixed left-1/2 top-1/2 z-50 max-h-[92vh] w-[calc(100%-32px)] max-w-[420px] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-2xl border border-line2 bg-gradient-to-b from-panel2 to-panel p-5 shadow-[0_20px_60px_rgba(0,0,0,0.5)] data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95",
+        "fixed left-1/2 top-1/2 z-50 max-h-[92vh] w-[calc(100%-32px)] max-w-[420px] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-2xl border border-line2 bg-panel2 p-6 shadow-cardHover data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95",
         className
       )}
       {...props}
@@ -31,7 +31,7 @@ const DialogContent = React.forwardRef<
 DialogContent.displayName = "DialogContent";
 
 function DialogTitle({ className, ...props }: React.ComponentPropsWithoutRef<typeof DialogPrimitive.Title>) {
-  return <DialogPrimitive.Title className={cn("text-[0.95rem] font-bold", className)} {...props} />;
+  return <DialogPrimitive.Title className={cn("text-[1rem] font-bold tracking-[-0.01em]", className)} {...props} />;
 }
 function DialogDescription({
   className,
@@ -39,7 +39,7 @@ function DialogDescription({
 }: React.ComponentPropsWithoutRef<typeof DialogPrimitive.Description>) {
   return (
     <DialogPrimitive.Description
-      className={cn("mb-4 mt-0.5 font-mono text-[0.64rem] text-dim", className)}
+      className={cn("mb-5 mt-1 font-mono text-[0.64rem] leading-relaxed text-dim", className)}
       {...props}
     />
   );

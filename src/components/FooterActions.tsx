@@ -82,7 +82,7 @@ export function FooterActions() {
   };
 
   return (
-    <div className="mt-8 flex flex-wrap items-center gap-2 border-t border-line2 pt-5">
+    <div className="mt-10 flex flex-wrap items-center gap-2.5 border-t border-line2 pt-6">
       <Button onClick={newDay}>▶ New Day (bank & advance)</Button>
       <Button variant="outline" onClick={doExport}>
         ⤓ Export backup (.json)

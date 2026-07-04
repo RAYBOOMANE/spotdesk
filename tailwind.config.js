@@ -13,22 +13,17 @@ export default {
         ink: "var(--ink)",
         dim: "var(--dim)",
         faint: "var(--faint)",
-        live: "var(--live)",
-        gold: "var(--gold)",
-        deepz: "var(--deep)",
-        cool: "var(--cool)",
-        payout: "var(--payout)",
-        loss: "var(--loss)",
-        free: "var(--free)"
+        profit: "var(--profit)",
+        loss: "var(--loss)"
       },
       fontFamily: {
         sans: ["'Space Grotesk'", "sans-serif"],
         mono: ["'JetBrains Mono'", "monospace"]
       },
-      borderRadius: { card: "14px" },
+      borderRadius: { card: "18px" },
       boxShadow: {
-        card: "0 2px 8px rgba(0,0,0,0.3), 0 8px 24px rgba(0,0,0,0.2)",
-        cardHover: "0 4px 14px rgba(0,0,0,0.35), 0 10px 30px rgba(0,0,0,0.2)"
+        card: "0 1px 0 0 rgba(255,255,255,0.05) inset, 0 8px 24px rgba(0,0,0,0.35)",
+        cardHover: "0 1px 0 0 rgba(255,255,255,0.08) inset, 0 12px 32px rgba(0,0,0,0.4)"
       }
     }
   },
