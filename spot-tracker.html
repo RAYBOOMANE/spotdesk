@@ -1,0 +1,1410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SPOT DESK</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
+
+  :root {
+    /* palette tuned to the reference dashboard: deep slate-blue, cyan glow, teal/green */
+    --void:#0a0e17; --panel:#121826; --panel2:#161d2e; --line:#212a3d; --line2:#2e3a52;
+    --ink:#eef2f8; --dim:#8090ab; --faint:#4a5670;
+    --live:#34d399; --free:#171f30; --gold:#fbbf5a; --deep:#f87186; --cool:#38bdf8;
+    --profit:#34d399; --loss:#f87186; --payout:#a78bfa;
+    --glow:0 0 0 1px rgba(52,211,153,0.12);
+    --shadow:0 2px 8px rgba(0,0,0,0.3), 0 8px 24px rgba(0,0,0,0.2);
+    --radius:14px;
+  }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { background:
+      radial-gradient(1200px 600px at 80% -10%, rgba(45,212,167,0.04), transparent 60%),
+      radial-gradient(900px 500px at -10% 10%, rgba(90,169,245,0.03), transparent 55%),
+      var(--void);
+    color:var(--ink); font-family:'Space Grotesk',sans-serif;
+    padding:22px 18px 70px; max-width:1140px; margin:0 auto; -webkit-font-smoothing:antialiased;
+    letter-spacing:-0.005em; }
+  .mono { font-family:'JetBrains Mono',monospace; }
+
+  header { display:flex; align-items:center; justify-content:space-between;
+    border-bottom:1px solid var(--line2); padding-bottom:16px; margin-bottom:22px; flex-wrap:wrap; gap:10px; }
+  .brand { font-size:1.35rem; font-weight:700; letter-spacing:-0.03em; }
+  .brand span { color:var(--live); }
+  .brand-wrap { display:flex; flex-direction:column; gap:4px; }
+  .mini-counter { font-size:0.6rem; color:var(--dim); letter-spacing:0.02em; }
+  .mini-counter b { color:var(--live); }
+  .mini-counter .mc-blew { color:var(--loss); }
+  .date { font-family:'JetBrains Mono',monospace; font-size:0.7rem; color:var(--dim);
+    background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:7px 12px; letter-spacing:0.03em; }
+  .save-ind { font-family:'JetBrains Mono',monospace; font-size:0.56rem; letter-spacing:0.03em; padding:3px 9px; border-radius:6px; }
+  .save-ind.ok { color:var(--profit); background:rgba(45,212,167,0.08); }
+  .save-ind.bad { color:var(--loss); background:rgba(255,97,120,0.12); font-weight:700; animation:pulse 1.4s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.5;} }
+
+  .topstats { display:grid; grid-template-columns:repeat(auto-fit,minmax(158px,1fr)); gap:11px; margin-bottom:24px; }
+  .stat { background:linear-gradient(180deg, var(--panel), var(--panel) 60%, rgba(21,27,39,0.6));
+    border:1px solid var(--line); border-radius:var(--radius); padding:15px 16px; position:relative; overflow:hidden;
+    box-shadow:var(--shadow); transition:border-color .18s, transform .18s; }
+  .stat:hover { border-color:var(--line2); }
+  .stat::before { content:''; position:absolute; left:0; top:0; bottom:0; width:3px; background:var(--faint); }
+  .stat.s-profit::before { background:var(--profit); }
+  .stat.s-payout::before { background:var(--payout); }
+  .stat.s-deploy::before { background:var(--cool); }
+  .stat.s-deep::before { background:var(--deep); }
+  .stat.s-leg2::before { background:var(--cool); }
+  .stat.s-today-dep::before { background:var(--gold); }
+  .stat.s-fwd::before { background:var(--gold); }
+  .stat.s-cap::before { background:var(--live); }
+  .stat .k { font-size:0.56rem; letter-spacing:0.13em; color:var(--dim); text-transform:uppercase; margin-bottom:9px; font-weight:500; }
+  .stat .v { font-family:'JetBrains Mono',monospace; font-size:1.5rem; font-weight:700; line-height:1; letter-spacing:-0.01em; }
+  .stat .sub { font-size:0.6rem; color:var(--faint); margin-top:8px; font-family:'JetBrains Mono',monospace; letter-spacing:0.01em; }
+  .pos { color:var(--profit); } .neg { color:var(--loss); } .pay { color:var(--payout); }
+
+  .capbar-wrap { margin-top:11px; height:5px; background:var(--free); border-radius:3px; overflow:hidden; }
+  .capbar-fill { height:100%; background:linear-gradient(90deg,var(--live),var(--cool)); border-radius:3px; transition:width .3s; }
+
+  .sect-h { display:flex; align-items:center; gap:12px; font-size:0.62rem; letter-spacing:0.2em;
+    color:var(--dim); text-transform:uppercase; margin:30px 0 14px; font-weight:600; }
+  .sect-h::after { content:''; flex:1; height:1px; background:linear-gradient(90deg, var(--line), transparent); }
+
+  .clusters { display:grid; grid-template-columns:repeat(auto-fill,minmax(196px,1fr)); gap:11px; }
+  .cluster { background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:12px 12px 13px;
+    transition:border-color .18s, transform .18s, box-shadow .18s; box-shadow:var(--shadow); }
+  .cluster.has-live { border-color:var(--line2); }
+  .cluster:hover { transform:translateY(-1px); box-shadow:0 4px 14px rgba(0,0,0,0.35), 0 10px 30px rgba(0,0,0,0.2); }
+  .cluster-head { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; gap:6px; }
+  .cluster-name-wrap { display:flex; align-items:center; gap:8px; min-width:0; }
+  .cl-color { width:11px; height:11px; border-radius:3px; cursor:pointer; flex-shrink:0; box-shadow:0 0 8px rgba(0,0,0,.5); transition:transform .12s; }
+  .cl-color:hover { transform:scale(1.25); }
+  .cluster-name { font-size:0.75rem; font-weight:700; cursor:pointer; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; letter-spacing:-0.01em; }
+  .cluster-name:hover { color:var(--live); }
+  .cluster-head-right { display:flex; align-items:center; gap:6px; flex-shrink:0; }
+  .cl-sheet { background:var(--panel2); border:1px solid var(--line2); color:var(--cool); border-radius:5px;
+    width:22px; height:22px; font-size:0.8rem; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0; transition:all .15s; }
+  .cl-sheet:hover { border-color:var(--cool); filter:brightness(1.2); }
+  .cl-sheet.dim { color:var(--faint); }
+  .cluster-tag { font-family:'JetBrains Mono',monospace; font-size:0.58rem; color:var(--dim); }
+
+  .packages { display:grid; grid-template-columns:repeat(auto-fill,minmax(170px,1fr)); gap:10px; margin-bottom:8px; }
+  .pkg { background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:13px 14px; position:relative; overflow:hidden; box-shadow:var(--shadow); }
+  .pkg::before { content:''; position:absolute; left:0; top:0; bottom:0; width:4px; }
+  .pkg-head { display:flex; align-items:center; gap:8px; margin-bottom:11px; }
+  .pkg-swatch { width:10px; height:10px; border-radius:3px; flex-shrink:0; }
+  .pkg-name { font-size:0.72rem; font-weight:700; letter-spacing:-0.01em; }
+  .pkg-clusters { font-family:'JetBrains Mono',monospace; font-size:0.55rem; color:var(--faint); margin-left:auto; }
+  .pkg-stat { display:flex; justify-content:space-between; font-family:'JetBrains Mono',monospace; font-size:0.62rem; margin-bottom:6px; }
+  .pkg-stat .pl { color:var(--dim); }
+  .pkg-stat .pv { font-weight:700; }
+  .pkg-empty { color:var(--faint); font-family:'JetBrains Mono',monospace; font-size:0.62rem; padding:14px; text-align:center; grid-column:1/-1; }
+
+  .slots { display:flex; flex-direction:column; gap:5px; }
+  .slot { display:flex; align-items:center; gap:8px; background:var(--panel2); border:1px solid var(--line);
+    border-radius:9px; padding:7px 9px; cursor:pointer; transition:border-color .15s, background .15s, transform .12s; user-select:none; }
+  .slot:hover { border-color:var(--line2); background:#19212f; }
+  .slot.occupied { border-color:var(--line2); }
+  .dot { width:8px; height:8px; border-radius:50%; background:var(--free); flex-shrink:0; transition:background .2s,box-shadow .2s; }
+  .slot.occupied .dot { background:var(--live); box-shadow:0 0 8px var(--live); }
+  .slot.zone-deep .dot { background:var(--deep); box-shadow:0 0 8px var(--deep); }
+  .slot.zone-cool .dot { background:var(--cool); box-shadow:0 0 8px var(--cool); }
+  .slot.zone-gold .dot { background:var(--gold); box-shadow:0 0 8px var(--gold); }
+  .slot-id { font-family:'JetBrains Mono',monospace; font-size:0.62rem; color:var(--dim); width:24px; flex-shrink:0; }
+  .slot-state { flex:1; font-family:'JetBrains Mono',monospace; font-size:0.64rem; }
+  .slot-state .day { color:var(--ink); font-weight:600; }
+  .slot-state .inv { color:var(--faint); }
+  .slot.free .slot-state { color:var(--faint); }
+  .slot-fwd { font-family:'JetBrains Mono',monospace; font-size:0.6rem; color:var(--gold); text-align:right; }
+  .slot-check { width:14px; height:14px; accent-color:var(--live); cursor:pointer; flex-shrink:0; margin:0; }
+  .slot.sel { border-color:var(--live); background:rgba(0,226,160,.08); }
+  .slot.traded .slot-id { color:var(--live); font-weight:700; }
+  .slot.traded { border-left:2px solid var(--live); }
+  .slot .dot, .slot .slot-id, .slot .slot-state { cursor:pointer; }
+
+  .multibar { position:fixed; left:50%; transform:translateX(-50%) translateY(120%); bottom:18px;
+    display:flex; align-items:center; gap:10px; background:var(--panel); border:1px solid var(--live);
+    border-radius:12px; padding:10px 14px; z-index:40; box-shadow:0 8px 30px rgba(0,0,0,.5); transition:transform .22s; }
+  .multibar.on { transform:translateX(-50%) translateY(0); }
+  .mb-count { font-family:'JetBrains Mono',monospace; font-size:0.7rem; color:var(--live); font-weight:700; }
+  .mb-btn { border:none; border-radius:8px; padding:8px 14px; font-family:'Space Grotesk',sans-serif; font-size:0.74rem; font-weight:600; cursor:pointer; }
+  .mb-log { background:var(--live); color:#04110c; }
+  .mb-clear { background:var(--panel2); color:var(--dim); border:1px solid var(--line2)!important; }
+
+  .overlay { position:fixed; inset:0; background:rgba(4,6,10,.72); display:none; align-items:center;
+    justify-content:center; z-index:50; padding:16px; backdrop-filter:blur(6px); }
+  .overlay.on { display:flex; }
+  .modal { background:linear-gradient(180deg, var(--panel2), var(--panel)); border:1px solid var(--line2);
+    border-radius:16px; padding:22px; width:100%; max-width:400px; max-height:92vh; overflow-y:auto;
+    box-shadow:0 20px 60px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.02); }
+  .modal h3 { font-size:0.95rem; margin-bottom:3px; }
+  .modal .msub { font-family:'JetBrains Mono',monospace; font-size:0.64rem; color:var(--dim); margin-bottom:16px; }
+
+  .dayrow { display:flex; flex-wrap:wrap; gap:5px; margin-bottom:16px; }
+  .daybtn { font-family:'JetBrains Mono',monospace; font-size:0.66rem; background:var(--panel2);
+    border:1px solid var(--line); color:var(--dim); border-radius:6px; padding:7px 0; cursor:pointer;
+    width:calc(14.28% - 5px); text-align:center; transition:all .15s; }
+  .daybtn:hover { border-color:var(--line2); color:var(--ink); }
+  .daybtn.sel { background:var(--live); color:#04110c; border-color:var(--live); font-weight:700; }
+  .daybtn.d-deep.sel { background:var(--deep); color:#1a0408; border-color:var(--deep); }
+  .daybtn.d-cool.sel { background:var(--cool); color:#04101a; border-color:var(--cool); }
+  .daybtn.d-gold.sel { background:var(--gold); color:#160f00; border-color:var(--gold); }
+
+  .field { margin-bottom:14px; }
+  .field label { display:block; font-size:0.58rem; letter-spacing:0.1em; color:var(--dim); text-transform:uppercase; margin-bottom:6px; }
+  .field input { width:100%; background:var(--void); border:1px solid var(--line2); border-radius:8px;
+    padding:10px 12px; color:var(--ink); font-family:'JetBrains Mono',monospace; font-size:0.9rem; }
+  .field input:focus { outline:none; border-color:var(--live); }
+  .field input::placeholder { color:var(--faint); }
+  .twocol { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+
+  .hint { font-family:'JetBrains Mono',monospace; font-size:0.6rem; color:var(--faint); margin-bottom:16px;
+    line-height:1.5; background:var(--panel2); border-radius:7px; padding:9px 10px; }
+  .hint b { color:var(--gold); }
+
+  .mbtns { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .mbtns button { border:none; border-radius:8px; padding:11px 0; font-family:'Space Grotesk',sans-serif;
+    font-size:0.76rem; font-weight:600; cursor:pointer; transition:filter .15s; }
+  .mbtns button:hover { filter:brightness(1.12); }
+  .btn-blew { background:var(--profit); color:#04110c; }
+  .btn-payout { background:var(--payout); color:#14081f; }
+  .btn-set { background:var(--cool); color:#04101a; }
+  .btn-free { background:var(--panel2); color:var(--dim); border:1px solid var(--line2)!important; }
+
+  .log { display:flex; flex-direction:column; gap:5px; }
+  .logrow { display:flex; align-items:center; gap:10px; background:var(--panel); border:1px solid var(--line);
+    border-radius:8px; padding:8px 12px; font-family:'JetBrains Mono',monospace; font-size:0.66rem; }
+  .logrow .lt { color:var(--faint); width:54px; }
+  .logrow .lid { color:var(--dim); width:60px; }
+  .logrow .ld { flex:1; color:var(--ink); }
+  .logrow .lp { font-weight:700; }
+  .del-btn { background:transparent; border:none; color:var(--faint); cursor:pointer; font-size:0.7rem;
+    padding:2px 6px; border-radius:4px; transition:all .12s; margin-left:2px; }
+  .del-btn:hover { color:var(--loss); background:rgba(255,84,112,.12); }
+  .tag-payout { color:var(--payout); }
+  .inv-note { color:var(--faint); font-size:0.58rem; }
+  .log-empty { color:var(--faint); font-family:'JetBrains Mono',monospace; font-size:0.66rem; padding:14px; text-align:center; }
+
+  .pnl-summary { display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:8px; margin-bottom:14px; }
+  .pnl-cell { background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:10px 12px; }
+  .pnl-cell .k { font-size:0.54rem; letter-spacing:0.09em; color:var(--dim); text-transform:uppercase; margin-bottom:5px; }
+  .pnl-cell .v { font-family:'JetBrains Mono',monospace; font-size:1.1rem; font-weight:700; }
+  .pnl-chart { display:flex; align-items:flex-end; gap:4px; height:110px; padding:10px 6px 0; background:var(--panel);
+    border:1px solid var(--line); border-radius:10px; margin-bottom:12px; overflow-x:auto; }
+  .pnl-bar-wrap { display:flex; flex-direction:column; align-items:center; gap:4px; min-width:26px; flex:1; height:100%; justify-content:flex-end; cursor:pointer; }
+  .pnl-bar { width:70%; min-height:2px; border-radius:3px 3px 0 0; transition:height .3s; }
+  .pnl-bar.pos { background:var(--profit); } .pnl-bar.neg { background:var(--loss); }
+  .pnl-bar-lbl { font-family:'JetBrains Mono',monospace; font-size:0.5rem; color:var(--faint); }
+  .pnl-empty { color:var(--faint); font-family:'JetBrains Mono',monospace; font-size:0.66rem; padding:30px; text-align:center; width:100%; }
+  .pnl-table { display:flex; flex-direction:column; gap:4px; }
+  .pnl-row { display:flex; align-items:center; gap:10px; background:var(--panel); border:1px solid var(--line);
+    border-radius:8px; padding:8px 12px; font-family:'JetBrains Mono',monospace; font-size:0.66rem; cursor:pointer; transition:border-color .15s; }
+  .pnl-row:hover { border-color:var(--line2); }
+  .pnl-row .pd { color:var(--dim); width:64px; }
+  .pnl-row .pdate { color:var(--faint); flex:1; }
+  .pnl-row .pwins { color:var(--dim); width:80px; text-align:right; }
+  .pnl-row .pnet { width:90px; text-align:right; font-weight:700; }
+
+  .foot { display:flex; gap:8px; margin-top:26px; flex-wrap:wrap; }
+  .foot button { background:var(--panel); border:1px solid var(--line2); color:var(--dim); border-radius:8px;
+    padding:9px 16px; font-size:0.68rem; cursor:pointer; font-family:'JetBrains Mono',monospace; transition:all .15s; }
+  .foot button:hover { color:var(--ink); border-color:var(--live); }
+  .foot button.danger:hover { color:var(--loss); border-color:var(--loss); }
+  .foot button.save-btn { background:var(--live); color:#04110c; border-color:var(--live); font-weight:700; }
+  .foot button.save-btn:hover { filter:brightness(1.1); color:#04110c; }
+
+  .legend { display:flex; gap:14px; flex-wrap:wrap; margin-top:14px; font-family:'JetBrains Mono',monospace; font-size:0.58rem; color:var(--dim); }
+  .phase-filters { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px; }
+
+  /* equity curve card */
+  .equity-card { background:linear-gradient(180deg,var(--panel),var(--panel2)); border:1px solid var(--line);
+    border-radius:var(--radius); padding:18px 20px; box-shadow:var(--shadow); margin-bottom:4px; }
+  .equity-head { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px; }
+  .eq-label { font-size:0.56rem; letter-spacing:0.13em; color:var(--dim); text-transform:uppercase; margin-bottom:6px; font-weight:500; }
+  .eq-value { font-size:1.6rem; font-weight:700; color:var(--live); letter-spacing:-0.01em; }
+  .eq-legend { font-family:'JetBrains Mono',monospace; font-size:0.58rem; color:var(--dim); display:flex; align-items:center; gap:6px; }
+  .eq-dot { width:8px; height:8px; border-radius:50%; background:var(--cool); box-shadow:0 0 8px var(--cool); }
+  .equity-chart { width:100%; height:180px; }
+  .equity-chart svg { width:100%; height:100%; display:block; overflow:visible; }
+  .eq-empty { display:flex; align-items:center; justify-content:center; height:100%; color:var(--faint);
+    font-family:'JetBrains Mono',monospace; font-size:0.66rem; }
+
+  /* positions table */
+  .positions-wrap { background:var(--panel); border:1px solid var(--line); border-radius:var(--radius);
+    overflow:hidden; box-shadow:var(--shadow); }
+  .positions { width:100%; border-collapse:collapse; font-size:0.68rem; }
+  .positions thead th { background:linear-gradient(180deg,rgba(52,211,153,0.06),transparent);
+    text-align:left; padding:11px 14px; font-family:'JetBrains Mono',monospace; font-size:0.56rem;
+    letter-spacing:0.12em; text-transform:uppercase; color:var(--dim); border-bottom:1px solid var(--line2); font-weight:500; }
+  .positions thead th.num { text-align:right; }
+  .positions tbody td { padding:10px 14px; border-bottom:1px solid rgba(33,42,61,0.5);
+    font-family:'JetBrains Mono',monospace; color:var(--ink); }
+  .positions tbody td.num { text-align:right; }
+  .positions tbody tr:last-child td { border-bottom:none; }
+  .positions tbody tr { cursor:pointer; transition:background .12s; }
+  .positions tbody tr:hover { background:var(--panel2); }
+  .pos-name { color:var(--dim); }
+  .pos-day-badge { display:inline-block; padding:2px 8px; border-radius:5px; font-size:0.58rem; font-weight:700; }
+  .pos-empty td { text-align:center; color:var(--faint); padding:24px; }
+  .pos-fwd { color:var(--gold); }
+  .pf-btn { background:var(--panel); border:1px solid var(--line2); color:var(--dim); border-radius:8px;
+    padding:7px 14px; font-family:'JetBrains Mono',monospace; font-size:0.66rem; cursor:pointer; transition:all .15s; }
+  .pf-btn:hover { color:var(--ink); border-color:var(--live); }
+  .pf-btn.active { background:var(--live); color:#04110c; border-color:var(--live); font-weight:700; }
+  .pf-btn .pf-n { opacity:0.7; margin-left:4px; }
+  .slot.dimmed { opacity:0.22; filter:grayscale(0.6); }
+  .cluster.all-dimmed { opacity:0.4; }
+  .legend span { display:flex; align-items:center; gap:5px; }
+  .lg-dot { width:8px; height:8px; border-radius:50%; }
+  .drawer-wins { margin-top:10px; display:flex; flex-direction:column; gap:4px; }
+  .edit-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .edit-cell { display:flex; flex-direction:column; gap:4px; }
+  .edit-cell span { font-family:'JetBrains Mono',monospace; font-size:0.56rem; color:var(--dim); }
+  .edit-cell input { background:var(--void); border:1px solid var(--line2); border-radius:7px; padding:8px 10px;
+    color:var(--ink); font-family:'JetBrains Mono',monospace; font-size:0.8rem; }
+  .edit-cell input:focus { outline:none; border-color:var(--live); }
+  .cap-names { display:flex; flex-direction:column; gap:6px; max-height:240px; overflow-y:auto; }
+  .cap-name-row { display:flex; align-items:center; gap:8px; }
+  .cap-name-row .cn-tag { font-family:'JetBrains Mono',monospace; font-size:0.62rem; color:var(--dim); width:34px; flex-shrink:0; }
+  .cap-name-row input { flex:1; background:var(--void); border:1px solid var(--line2); border-radius:7px;
+    padding:7px 10px; color:var(--ink); font-family:'JetBrains Mono',monospace; font-size:0.74rem; }
+  .cap-name-row input:focus { outline:none; border-color:var(--live); }
+  .cn-swatches { display:flex; gap:3px; flex-shrink:0; }
+  .cn-swatch { width:14px; height:14px; border-radius:3px; cursor:pointer; opacity:0.4; transition:opacity .12s,transform .12s; border:1px solid transparent; }
+  .cn-swatch:hover { opacity:0.8; transform:scale(1.15); }
+  .cn-swatch.sel { opacity:1; border-color:var(--ink); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand-wrap">
+    <div class="brand">SPOT<span>DESK</span></div>
+    <div class="mini-counter mono" id="mini-counter">0/0 traded · 0 blew</div>
+  </div>
+  <div style="display:flex; flex-direction:column; align-items:flex-end; gap:6px;">
+    <div class="date mono" id="today"></div>
+    <div class="save-ind" id="save-indicator">● initializing</div>
+  </div>
+</header>
+
+<div class="topstats">
+  <div class="stat s-profit">
+    <div class="k">Profit · Today</div>
+    <div class="v mono" id="st-today">$0</div>
+    <div class="sub" id="st-today-n">0 blows</div>
+  </div>
+  <div class="stat s-payout">
+    <div class="k">Payouts · This Month</div>
+    <div class="v mono" id="st-payout">$0</div>
+    <div class="sub" id="st-payout-n">since month start</div>
+  </div>
+  <div class="stat s-deploy">
+    <div class="k">Total Deployed Now</div>
+    <div class="v mono" id="st-deploy">$0</div>
+    <div class="sub" id="st-deploy-n">0 spots live</div>
+  </div>
+  <div class="stat s-deep">
+    <div class="k">Active Past D3 (D4+)</div>
+    <div class="v mono" id="st-deep">0</div>
+    <div class="sub" id="st-deep-n">in the deep zone</div>
+  </div>
+  <div class="stat s-leg2">
+    <div class="k">In Second Leg (D8+)</div>
+    <div class="v mono" id="st-leg2">0</div>
+    <div class="sub" id="st-leg2-n">past the gateway</div>
+  </div>
+  <div class="stat s-today-dep">
+    <div class="k">Deployed Today</div>
+    <div class="v mono" id="st-todaydep">$0</div>
+    <div class="sub" id="st-todaydep-n">new entries today</div>
+  </div>
+  <div class="stat s-fwd">
+    <div class="k">Expected Next Outcome</div>
+    <div class="v mono" id="st-fwd">$0</div>
+    <div class="sub" id="st-fwd-n">forward EV</div>
+  </div>
+  <div class="stat s-cap" onclick="setCapacity()" style="cursor:pointer" title="click to set your own capacity target">
+    <div class="k">Capacity Used</div>
+    <div class="v mono" id="st-cap">0%</div>
+    <div class="capbar-wrap"><div class="capbar-fill" id="capbar" style="width:0%"></div></div>
+    <div class="sub" id="st-cap-n">0 / 85 active</div>
+  </div>
+</div>
+
+<div class="sect-h">Cumulative Equity · from banked days</div>
+<div class="equity-card">
+  <div class="equity-head">
+    <div>
+      <div class="eq-label">Total banked</div>
+      <div class="eq-value mono" id="eq-total">$0</div>
+    </div>
+    <div class="eq-legend"><span class="eq-dot"></span>cumulative P&amp;L</div>
+  </div>
+  <div class="equity-chart" id="equity-chart"></div>
+</div>
+
+<div class="sect-h">Clusters · tap a slot to log</div>
+<div class="phase-filters" id="phase-filters">
+  <button class="pf-btn active" data-phase="all" onclick="setPhaseFilter('all')">Tous</button>
+  <button class="pf-btn" data-phase="1" onclick="setPhaseFilter('1')">D1</button>
+  <button class="pf-btn" data-phase="2" onclick="setPhaseFilter('2')">D2</button>
+  <button class="pf-btn" data-phase="3" onclick="setPhaseFilter('3')">D3</button>
+  <button class="pf-btn" data-phase="4-7" onclick="setPhaseFilter('4-7')">D4–7</button>
+  <button class="pf-btn" data-phase="8-12" onclick="setPhaseFilter('8-12')">D8–12</button>
+</div>
+<div class="clusters" id="clusters"></div>
+
+<div class="legend">
+  <span><span class="lg-dot" style="background:var(--free)"></span>free</span>
+  <span><span class="lg-dot" style="background:var(--live)"></span>D1–3</span>
+  <span><span class="lg-dot" style="background:var(--deep)"></span>D4–7 deep</span>
+  <span><span class="lg-dot" style="background:var(--gold)"></span>D8 / D14</span>
+  <span><span class="lg-dot" style="background:var(--cool)"></span>D9–13</span>
+</div>
+
+<div class="sect-h">Active Positions · all live accounts</div>
+<div class="positions-wrap">
+  <table class="positions" id="positions-table"></table>
+</div>
+
+<div class="sect-h">Today's activity</div>
+<div class="log" id="log"></div>
+
+<div class="sect-h">Package Performance · by color</div>
+<div class="packages" id="packages"></div>
+
+<div class="sect-h">P&amp;L History</div>
+<div class="pnl-summary" id="pnl-summary"></div>
+<div class="pnl-chart" id="pnl-chart"></div>
+<div class="pnl-table" id="pnl-table"></div>
+
+<div class="foot">
+  <button onclick="rollDay()">⟳ New Day (bank &amp; archive today)</button>
+  <button class="save-btn" onclick="exportData()">💾 Save / Export backup</button>
+  <button onclick="document.getElementById('importFile').click()">↑ Import backup</button>
+  <input type="file" id="importFile" accept="application/json,.json" style="display:none" onchange="importData(event)">
+  <button class="danger" onclick="resetAll()">⌫ Reset everything</button>
+</div>
+
+<!-- MULTI-SELECT BAR -->
+<div class="multibar" id="multibar">
+  <span class="mb-count" id="mb-count">0 selected</span>
+  <button class="mb-btn mb-log" onclick="openMultiModal()">Log selected together</button>
+  <button class="mb-btn mb-clear" onclick="clearSel()">Clear</button>
+</div>
+
+<!-- LOG MODAL -->
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <h3 id="m-title">Cluster · Account</h3>
+    <div class="msub">Set the day, enter true costs, then pick an outcome.</div>
+    <div class="field">
+      <label>Day on ladder</label>
+      <div class="dayrow" id="dayrow"></div>
+    </div>
+    <div class="hint" id="m-hint"></div>
+    <div class="twocol">
+      <div class="field">
+        <label>Account / ladder cost</label>
+        <input type="text" inputmode="decimal" id="m-cost" placeholder="">
+      </div>
+      <div class="field">
+        <label>Extra investment now</label>
+        <input type="text" inputmode="decimal" id="m-extra" placeholder="0">
+      </div>
+    </div>
+    <div class="field">
+      <label>Total profit received (gross)</label>
+      <input type="text" inputmode="decimal" id="m-amount" placeholder="">
+    </div>
+    <div class="hint" id="m-net-preview"></div>
+    <div class="mbtns">
+      <button class="btn-blew" onclick="logOutcome('blew')">Blew +$ (restart)</button>
+      <button class="btn-payout" onclick="logOutcome('payout')">Payout +$ (keep)</button>
+      <button class="btn-set" onclick="saveContinue()">Set Day</button>
+      <button class="btn-free" onclick="freeSpot()">Free slot</button>
+    </div>
+  </div>
+</div>
+
+<!-- MULTI-LOG MODAL -->
+<div class="overlay" id="overlay4">
+  <div class="modal">
+    <h3 id="mm-title">Multi-log · copy trade</h3>
+    <div class="msub" id="mm-sub">Applies the same day + result to every selected account.</div>
+    <div class="field">
+      <label>Day on ladder</label>
+      <div class="dayrow" id="mm-dayrow"></div>
+    </div>
+    <div class="hint" id="mm-hint"></div>
+    <div class="twocol">
+      <div class="field">
+        <label>Investment PER account</label>
+        <input type="text" inputmode="decimal" id="mm-cost" placeholder="">
+      </div>
+      <div class="field">
+        <label>Extra PER account</label>
+        <input type="text" inputmode="decimal" id="mm-extra" placeholder="0">
+      </div>
+    </div>
+    <div class="field">
+      <label>Gross received PER account</label>
+      <input type="text" inputmode="decimal" id="mm-amount" placeholder="">
+    </div>
+    <div class="hint" id="mm-net-preview"></div>
+    <div class="mbtns">
+      <button class="btn-blew" onclick="multiOutcome('blew')">Blew all +$</button>
+      <button class="btn-payout" onclick="multiOutcome('payout')">Payout all +$</button>
+      <button class="btn-set" onclick="multiSetDay()">Set day (all)</button>
+      <button class="btn-free" onclick="multiFree()">Free all</button>
+    </div>
+  </div>
+</div>
+
+<!-- DAY DETAIL MODAL -->
+<div class="overlay" id="overlay2">
+  <div class="modal">
+    <h3 id="d-title">Day detail</h3>
+    <div class="msub" id="d-sub"></div>
+
+    <div class="field" style="margin-top:6px;">
+      <label>Edit this day's totals</label>
+      <div class="edit-grid">
+        <div class="edit-cell"><span>Profit (blows) $</span><input type="text" inputmode="decimal" id="ed-profit"></div>
+        <div class="edit-cell"><span>Payout gross $</span><input type="text" inputmode="decimal" id="ed-payout"></div>
+        <div class="edit-cell"><span>Payout profit $</span><input type="text" inputmode="decimal" id="ed-payoutprofit"></div>
+        <div class="edit-cell"><span>Deployed $</span><input type="text" inputmode="decimal" id="ed-deployed"></div>
+        <div class="edit-cell"><span># Blown</span><input type="text" inputmode="numeric" id="ed-blown"></div>
+      </div>
+    </div>
+
+    <div class="drawer-wins" id="d-wins"></div>
+
+    <div class="mbtns" style="grid-template-columns:1fr 1fr; margin-top:16px;">
+      <button class="btn-set" onclick="saveDayEdit()">Save changes</button>
+      <button class="btn-free" onclick="closeDrawer()">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- CAPACITY MODAL -->
+<div class="overlay" id="overlay3">
+  <div class="modal">
+    <h3>Capacity &amp; clusters</h3>
+    <div class="msub">Set how many clusters and accounts you're counting capacity against, and name your clusters.</div>
+    <div class="twocol">
+      <div class="field">
+        <label>Clusters in play</label>
+        <input type="text" inputmode="numeric" id="cap-clusters" placeholder="17">
+      </div>
+      <div class="field">
+        <label>Accounts / cluster</label>
+        <input type="text" inputmode="numeric" id="cap-accts" placeholder="5">
+      </div>
+    </div>
+    <div class="hint" id="cap-preview"></div>
+    <div class="field">
+      <label>Cluster names</label>
+      <div id="cap-names" class="cap-names"></div>
+    </div>
+    <div class="mbtns">
+      <button class="btn-set" onclick="saveCapacity()">Save</button>
+      <button class="btn-free" onclick="clearCapacity()">Reset to default (17×5)</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const LADDER = {
+  1:{inv:95,  p:0.45, prof:25,  zone:'live'},
+  2:{inv:190, p:0.45, prof:25,  zone:'live'},
+  3:{inv:388, p:0.58, prof:40,  zone:'live'},
+  4:{inv:1400,p:0.05, prof:50,  zone:'deep'},
+  5:{inv:1450,p:0.05, prof:50,  zone:'deep'},
+  6:{inv:1520,p:0.05, prof:50,  zone:'deep'},
+  7:{inv:1600,p:0.05, prof:50,  zone:'deep'},
+  8:{inv:0,   p:1.0,  prof:0,   zone:'gold', gateway:true}, // gateway to second leg, no payout
+  9:{inv:85,  p:0.078,prof:900, zone:'cool'},
+  10:{inv:190,p:0.078,prof:900, zone:'cool'},
+  11:{inv:280,p:0.078,prof:900, zone:'cool'},
+  12:{inv:390,p:0.078,prof:900, zone:'cool'},
+  13:{inv:480,p:0.078,prof:900, zone:'cool'},
+  14:{inv:0,  p:1.0,  prof:750, zone:'gold', payout:true}, // survivor payout, keep account
+};
+const N_CLUSTERS = 17;
+const ACCTS_PER_CLUSTER = 5;
+const STORE_KEY = 'spotdesk_v2';
+
+// Package colors — clusters sharing a color form a package
+const PACKAGE_COLORS = [
+  {name:'Teal',    hex:'#00e2a0'},
+  {name:'Blue',    hex:'#4aa8ff'},
+  {name:'Purple',  hex:'#b794ff'},
+  {name:'Gold',    hex:'#ffc857'},
+  {name:'Rose',    hex:'#ff5470'},
+  {name:'Cyan',    hex:'#22d3ee'},
+  {name:'Lime',    hex:'#a3e635'},
+  {name:'Orange',  hex:'#fb923c'},
+];
+
+let state = load() || freshState();
+
+function freshState() {
+  const spots = {};
+  const names = {};
+  const colors = {};
+  const sheets = {};
+  for (let c=1;c<=N_CLUSTERS;c++){
+    names[c] = 'C'+c;
+    colors[c] = PACKAGE_COLORS[0].hex; // default first color
+    sheets[c] = '';
+    for (let a=1;a<=ACCTS_PER_CLUSTER;a++)
+      spots[`${c}-${a}`] = { day:0, cost:0, extra:0 };
+  }
+  return { spots, names, colors, sheets, capacityTarget:0, capClusters:null, capAccts:null, accountPrice:95, todayProfit:0, todayPayouts:0, todayLog:[], tradedToday:[], deployedToday:0, dayCount:1, history:[] };
+}
+function load(){ try{ const r=localStorage.getItem(STORE_KEY); return r?JSON.parse(r):null; }catch(e){ return null; } }
+let _lastSaveOk = null;
+function save(){
+  try{
+    localStorage.setItem(STORE_KEY, JSON.stringify(state));
+    // verify it actually persisted (Safari file:// sometimes silently fails)
+    const check = localStorage.getItem(STORE_KEY);
+    _lastSaveOk = (check && check.length>0);
+    updateSaveIndicator();
+  }catch(e){ _lastSaveOk=false; updateSaveIndicator(); }
+}
+function updateSaveIndicator(){
+  const el=document.getElementById('save-indicator');
+  if(!el) return;
+  const t=new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  if(_lastSaveOk){
+    el.innerHTML=`● saved ${t}`;
+    el.className='save-ind ok';
+  } else {
+    el.innerHTML=`⚠ NOT saving — export a backup!`;
+    el.className='save-ind bad';
+  }
+}
+// Forward value per day — user's explicit model:
+// D1-3: profit-on-blow × probability of hitting
+// D4-7: flat $150 expected end-of-cycle profit
+// D8-13: phase-2 weighted average (14.2625%×900 + 85.7375%×700 = 728.52)
+// D14: the $750 payout
+const PHASE2_AVG = (1 - Math.pow(0.95,3))*900 + Math.pow(0.95,3)*700; // 728.52
+const FWD = {
+  1: 25*0.45,   // 11.25
+  2: 25*0.45,   // 11.25
+  3: 40*0.58,   // 23.20
+  4: 150, 5: 150, 6: 150, 7: 150,
+  8: PHASE2_AVG,
+  9: PHASE2_AVG, 10: PHASE2_AVG, 11: PHASE2_AVG, 12: PHASE2_AVG, 13: PHASE2_AVG,
+  14: 750,
+};
+function fwdEV(day){ if(day<1||day>14) return 0; return FWD[day]||0; }
+
+// mark an account as traded today (green highlight, resets on New Day)
+function markTraded(id){
+  if(!state.tradedToday) state.tradedToday=[];
+  if(!state.tradedToday.includes(id)) state.tradedToday.push(id);
+}
+
+// Cumulative invested climbing the ladder, PHASE-AWARE.
+// Phase 1 (D1–8): sum from D1. Phase 2 (D9–14): sum from D9 only, because the second
+// leg uses fresh cheap accounts — phase-1 costs belonged to a different account life.
+function cumInvest(day){
+  let sum = 0;
+  const start = (day >= 9) ? 9 : 1;
+  for (let d=start; d<=day && d<=14; d++){ sum += LADDER[d].inv; }
+  return sum;
+}
+
+function render(){
+  document.getElementById('today').textContent =
+    'DAY '+state.dayCount+' · '+new Date().toLocaleDateString('en-GB',{weekday:'short',day:'2-digit',month:'short'});
+
+  let deployed=0, liveCount=0, fwdTotal=0, deepCount=0, secondLegCount=0;
+  const clEl=document.getElementById('clusters'); clEl.innerHTML='';
+  const nClusters = (state.capClusters && state.capClusters>0) ? state.capClusters : N_CLUSTERS;
+  const nAccts = (state.capAccts && state.capAccts>0) ? state.capAccts : ACCTS_PER_CLUSTER;
+  for (let c=1;c<=nClusters;c++){
+    let clusterLive=0, clusterInv=0, clusterMatches=0; const slotsHtml=[];
+    for (let a=1;a<=nAccts;a++){
+      const id=`${c}-${a}`;
+      if(!state.spots[id]) state.spots[id]={day:0,cost:0,extra:0};
+      const sp=state.spots[id]; const occupied=sp.day>=1;
+      let zoneCls='',stateHtml='',fwdHtml='';
+      if(occupied){
+        const L=LADDER[sp.day]; zoneCls='zone-'+L.zone;
+        const tied=(sp.cost||0)+(sp.extra||0) || L.inv;
+        deployed+=tied; liveCount++; clusterLive++; clusterInv+=tied;
+        if(sp.day>=4 && sp.day<=7) deepCount++; // past D3, in the expensive phase-1 zone
+        if(sp.day>=8) secondLegCount++; // D8+ = past gateway, true second leg
+        const fwd=fwdEV(sp.day); fwdTotal+=fwd;
+        stateHtml=`<span class="day">D${sp.day}</span> <span class="inv">$${tied}</span>`;
+        fwdHtml=`<div class="slot-fwd">~$${fwd.toFixed(0)}</div>`;
+      } else { stateHtml='free'; }
+      const checked = (multiSel.has(id)) ? 'checked' : '';
+      const traded = (state.tradedToday && state.tradedToday.includes(id)) ? 'traded' : '';
+      const dimmed = (phaseFilter!=='all' && !matchesPhase(sp.day)) ? 'dimmed' : '';
+      if(phaseFilter!=='all' && matchesPhase(sp.day)) clusterMatches++;
+      slotsHtml.push(`<div class="slot ${occupied?'occupied '+zoneCls:'free'} ${multiSel.has(id)?'sel':''} ${traded} ${dimmed}">
+        <input type="checkbox" class="slot-check" ${checked} onclick="event.stopPropagation();toggleSel('${id}')" title="select for multi-log">
+        <div class="dot" onclick="openModal('${id}')"></div>
+        <div class="slot-id" onclick="openModal('${id}')">${a}</div>
+        <div class="slot-state" onclick="openModal('${id}')">${stateHtml}</div>${fwdHtml}</div>`);
+    }
+    const cColor = (state.colors && state.colors[c]) ? state.colors[c] : PACKAGE_COLORS[0].hex;
+    const cSheet = (state.sheets && state.sheets[c]) ? state.sheets[c] : '';
+    const sheetBtn = cSheet
+      ? `<button class="cl-sheet" onclick="event.stopPropagation();openSheet(${c})" title="open Google Sheet">⊞</button>`
+      : `<button class="cl-sheet dim" onclick="event.stopPropagation();setSheet(${c})" title="add Google Sheet link">⊞</button>`;
+    const allDimmed = (phaseFilter!=='all' && clusterMatches===0) ? 'all-dimmed' : '';
+    clEl.innerHTML+=`<div class="cluster ${clusterLive>0?'has-live':''} ${allDimmed}" style="border-top:2px solid ${cColor}">
+      <div class="cluster-head">
+        <div class="cluster-name-wrap">
+          <span class="cl-color" onclick="event.stopPropagation();cycleColor(${c})" style="background:${cColor}" title="click to change package color"></span>
+          <div class="cluster-name" onclick="renameCluster(${c})" title="click to rename">${state.names&&state.names[c]?state.names[c]:'C'+c}</div>
+        </div>
+        <div class="cluster-head-right">
+          ${sheetBtn}
+          <div class="cluster-tag">${clusterLive}/${nAccts} · $${clusterInv}</div>
+        </div>
+      </div>
+      <div class="slots">${slotsHtml.join('')}</div></div>`;
+  }
+
+  const tp=state.todayProfit;
+  const tpEl=document.getElementById('st-today');
+  tpEl.textContent=(tp>=0?'+$':'-$')+Math.abs(tp).toLocaleString();
+  tpEl.className='v mono '+(tp>=0?'pos':'neg');
+  document.getElementById('st-today-n').textContent=state.todayLog.filter(l=>l.type==='blew').length+' blows';
+
+  // Payouts THIS MONTH = archived days in current month + today
+  const now2=new Date();
+  const monthStart=new Date(now2.getFullYear(), now2.getMonth(), 1);
+  let monthPayouts=0;
+  (state.history||[]).forEach(d=>{
+    if(d.date && new Date(d.date)>=monthStart) monthPayouts += (d.payouts||0);
+  });
+  monthPayouts += state.todayPayouts; // today counts toward this month
+  document.getElementById('st-payout').textContent='+$'+Math.round(monthPayouts).toLocaleString();
+  document.getElementById('st-payout').className='v mono pay';
+  document.getElementById('st-payout-n').textContent='since '+monthStart.toLocaleDateString('en-GB',{day:'2-digit',month:'short'});
+
+  document.getElementById('st-deploy').textContent='$'+deployed.toLocaleString();
+  document.getElementById('st-deploy-n').textContent=liveCount+' spots live';
+
+  // dedicated D4+ card
+  document.getElementById('st-deep').textContent=deepCount;
+  document.getElementById('st-deep').className='v mono '+(deepCount>0?'':'');
+  document.getElementById('st-deep').style.color = deepCount>0 ? 'var(--deep)' : 'var(--ink)';
+
+  // D8+ second leg card
+  document.getElementById('st-leg2').textContent=secondLegCount;
+  document.getElementById('st-leg2').style.color = secondLegCount>0 ? 'var(--cool)' : 'var(--ink)';
+
+  // deployed today
+  const depToday=state.deployedToday||0;
+  document.getElementById('st-todaydep').textContent='$'+Math.round(depToday).toLocaleString();
+
+  // top-left counter:
+  // A = blown accounts today
+  // B = countdown of ACTIVE accounts still left to trade today (live spots not yet traded today)
+  const blewCount = state.todayLog.filter(l=>l.type==='blew').length;
+  let leftToTrade = 0;
+  const nCl=(state.capClusters&&state.capClusters>0)?state.capClusters:N_CLUSTERS;
+  const nAc=(state.capAccts&&state.capAccts>0)?state.capAccts:ACCTS_PER_CLUSTER;
+  for(let c=1;c<=nCl;c++) for(let a=1;a<=nAc;a++){
+    const id=`${c}-${a}`; const sp=state.spots[id];
+    if(sp && sp.day>=1 && !(state.tradedToday||[]).includes(id)) leftToTrade++;
+  }
+  document.getElementById('mini-counter').innerHTML =
+    `<span class="mc-blew">${blewCount} blown</span> · <b>${leftToTrade}</b> left to trade`;
+  document.getElementById('st-fwd').textContent='+$'+fwdTotal.toFixed(0);
+
+  const totalSlots=N_CLUSTERS*ACCTS_PER_CLUSTER;
+  const denom = (state.capacityTarget && state.capacityTarget>0) ? state.capacityTarget : totalSlots;
+  const capPct=liveCount/denom*100;
+  document.getElementById('st-cap').textContent=capPct.toFixed(0)+'%';
+  document.getElementById('capbar').style.width=Math.min(100,capPct)+'%';
+  const denomLabel = (state.capClusters && state.capAccts)
+    ? `${liveCount} / ${denom} (${state.capClusters}×${state.capAccts})`
+    : `${liveCount} / ${denom} active`;
+  document.getElementById('st-cap-n').textContent=denomLabel;
+
+  window._deployedNow = deployed; // for New Day equity display
+
+  const logEl=document.getElementById('log');
+  if(state.todayLog.length===0){ logEl.innerHTML='<div class="log-empty">Nothing logged yet today.</div>'; }
+  else {
+    logEl.innerHTML=state.todayLog.map((w,idx)=>({w,idx})).reverse().map(({w,idx})=>{
+      const delBtn=`<button class="del-btn" onclick="deleteLog(${idx})" title="delete / undo this entry">✕</button>`;
+      if(w.type==='payout'){
+        return `<div class="logrow"><span class="lt">${w.time}</span>
+          <span class="lid">C${w.id.split('-')[0]}·A${w.id.split('-')[1]}</span>
+          <span class="ld"><span class="tag-payout">payout on</span> D${w.day} <span class="inv-note">($${w.amount} − $${w.invested} inv)</span></span>
+          <span class="lp pay">+$${w.profit.toLocaleString()}</span>${delBtn}</div>`;
+      }
+      return `<div class="logrow"><span class="lt">${w.time}</span>
+        <span class="lid">C${w.id.split('-')[0]}·A${w.id.split('-')[1]}</span>
+        <span class="ld">blew on D${w.day} <span class="inv-note">($${w.amount} − $${w.sunk!=null?w.sunk:0} inv)</span></span>
+        <span class="lp ${(w.profit!=null?w.profit:w.amount)>=0?'pos':'neg'}">${(w.profit!=null?w.profit:w.amount)>=0?'+':''}$${(w.profit!=null?w.profit:w.amount).toLocaleString()}</span>${delBtn}</div>`;
+    }).join('');
+  }
+  // phase filter button counts
+  const phaseCounts={'1':0,'2':0,'3':0,'4-7':0,'8-12':0,'all':0};
+  Object.values(state.spots).forEach(sp=>{
+    if(sp.day<1) return;
+    phaseCounts['all']++;
+    if(sp.day===1) phaseCounts['1']++;
+    else if(sp.day===2) phaseCounts['2']++;
+    else if(sp.day===3) phaseCounts['3']++;
+    else if(sp.day>=4&&sp.day<=7) phaseCounts['4-7']++;
+    else if(sp.day>=8&&sp.day<=12) phaseCounts['8-12']++;
+  });
+  document.querySelectorAll('.pf-btn').forEach(b=>{
+    const ph=b.getAttribute('data-phase');
+    const base=ph==='all'?'Tous':(ph==='4-7'?'D4–7':(ph==='8-12'?'D8–12':'D'+ph));
+    const n=phaseCounts[ph]||0;
+    b.innerHTML = base + (n>0?` <span class="pf-n">${n}</span>`:'');
+  });
+
+  renderEquity();
+  renderPositions();
+  renderPackages();
+  renderHistory(); save();
+}
+
+let activeId=null, selDay=null;
+let phaseFilter='all';
+
+// does a day match the active phase filter?
+function matchesPhase(day){
+  if(phaseFilter==='all') return true;
+  if(day<1) return false; // free spots never match a specific phase
+  if(phaseFilter==='1') return day===1;
+  if(phaseFilter==='2') return day===2;
+  if(phaseFilter==='3') return day===3;
+  if(phaseFilter==='4-7') return day>=4 && day<=7;
+  if(phaseFilter==='8-12') return day>=8 && day<=12;
+  return true;
+}
+function setPhaseFilter(p){
+  phaseFilter=p;
+  document.querySelectorAll('.pf-btn').forEach(b=>b.classList.toggle('active', b.getAttribute('data-phase')===p));
+  render();
+}
+let multiSel = new Set(); // account ids selected for multi-log
+let multiMode = false;
+function openModal(id){
+  activeId=id; const sp=state.spots[id]; selDay=sp.day>=1?sp.day:1;
+  const [c,a]=id.split('-');
+  document.getElementById('m-title').textContent=`Cluster ${c} · Account ${a}`;
+  const dr=document.getElementById('dayrow'); dr.innerHTML='';
+  for(let d=1;d<=14;d++){ const L=LADDER[d];
+    dr.innerHTML+=`<button class="daybtn d-${L.zone} ${d===selDay?'sel':''}" onclick="pickDay(${d})">${d}</button>`; }
+  document.getElementById('m-cost').value=sp.cost?sp.cost:'';
+  document.getElementById('m-extra').value=sp.extra?sp.extra:'';
+  document.getElementById('m-amount').value='';
+  syncDayFields();
+  document.getElementById('overlay').classList.add('on');
+}
+document.addEventListener('DOMContentLoaded',()=>{});
+// live net preview as user types gross
+(function(){
+  const amtInput=document.getElementById('m-amount');
+  if(amtInput) amtInput.addEventListener('input',updateNetPreview);
+  const costInput=document.getElementById('m-cost');
+  if(costInput) costInput.addEventListener('input',updateNetPreview);
+})();
+function pickDay(d){ selDay=d;
+  document.querySelectorAll('.daybtn').forEach((b,i)=>b.classList.toggle('sel',i+1===d));
+  syncDayFields(); }
+function syncDayFields(){
+  const L=LADDER[selDay];
+  document.getElementById('m-cost').placeholder=String(L.inv);
+  document.getElementById('m-amount').placeholder=String(L.prof);
+  const fwd=fwdEV(selDay);
+  document.getElementById('m-hint').innerHTML=
+    `Day ${selDay}: benchmark cost <b>$${L.inv}</b> · win chance <b>${(L.p*100).toFixed(1)}%</b> · forward EV <b>~$${fwd.toFixed(0)}</b>`;
+  updateNetPreview();
+}
+function updateNetPreview(){
+  const el=document.getElementById('m-net-preview');
+  if(!el) return;
+  const typedCost=parseFloat(document.getElementById('m-cost').value);
+  const extra=readExtra();
+  const invested=(isNaN(typedCost)?cumInvest(selDay):typedCost)+extra;
+  const usingBenchmark=isNaN(typedCost);
+  const gross=parseFloat(document.getElementById('m-amount').value);
+  const src = usingBenchmark ? `benchmark $${invested.toLocaleString()}` : `your $${invested.toLocaleString()} invested`;
+  if(isNaN(gross)){
+    el.innerHTML=`On <b>blow</b>: net = gross − ${src}. Enter gross to preview.`;
+  } else {
+    const net=gross-invested;
+    el.innerHTML=`On <b>blow</b>: $${gross.toLocaleString()} − $${invested.toLocaleString()} = <b style="color:${net>=0?'var(--profit)':'var(--loss)'}">${net>=0?'+':''}$${(Math.round(net*100)/100).toLocaleString()} net</b>`;
+  }
+}
+function readCost(){ const v=parseFloat(document.getElementById('m-cost').value); return isNaN(v)?LADDER[selDay].inv:v; }
+function readExtra(){ const v=parseFloat(document.getElementById('m-extra').value); return isNaN(v)?0:v; }
+function readAmount(){ const v=parseFloat(document.getElementById('m-amount').value); return isNaN(v)?LADDER[selDay].prof:v; }
+
+function saveContinue(){
+  const extra=readExtra();
+  const prevExtra=(state.spots[activeId] && state.spots[activeId].extra) || 0;
+  const addedExtra = extra>0 && extra!==prevExtra;
+  // only counts as "traded" / new deployment if extra investment was actually added
+  if(addedExtra){ markTraded(activeId); state.deployedToday=(state.deployedToday||0)+extra; }
+  state.spots[activeId]={day:selDay,cost:readCost(),extra:extra};
+  closeModal(); render();
+}
+function logOutcome(type){
+  const amt=readAmount();
+  const now=new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+  markTraded(activeId);
+  if(type==='blew'){
+    // user enters GROSS total profit received. Deduct the ACTUAL investment they typed
+    // (cost + extra). If they left cost blank, fall back to the phase-aware benchmark.
+    const typedCost = parseFloat(document.getElementById('m-cost').value);
+    const invested = (isNaN(typedCost) ? cumInvest(selDay) : typedCost) + readExtra();
+    const net = amt - invested;
+    state.todayLog.push({time:now,id:activeId,amount:amt,sunk:invested,profit:net,day:selDay,type:'blew'});
+    state.todayProfit += net;
+    state.spots[activeId]={day:0,cost:0,extra:0};
+  } else {
+    // payout: profit = payout amount − investment put in. Account KEPT, stays SAME day, 0 invested.
+    const invested = readCost()+readExtra();
+    const netProfit = amt - invested;
+    state.todayLog.push({time:now,id:activeId,amount:amt,invested:invested,profit:netProfit,day:selDay,type:'payout'});
+    state.todayPayouts += netProfit;
+    state.spots[activeId]={day:selDay,cost:0,extra:0};
+  }
+  closeModal(); render();
+}
+function freeSpot(){ state.spots[activeId]={day:0,cost:0,extra:0}; closeModal(); render(); }
+
+// ── MULTI-SELECT (copy trade) ───────────────────────────────────────
+function toggleSel(id){
+  if(multiSel.has(id)){ multiSel.delete(id); updateMultibar(); render(); return; }
+  const sp=state.spots[id];
+  const thisCluster=id.split('-')[0];
+  const thisOccupied = sp && sp.day>=1;
+  if(multiSel.size>0){
+    const firstId=[...multiSel][0];
+    const firstCluster=firstId.split('-')[0];
+    const firstSp=state.spots[firstId];
+    const firstOccupied = firstSp && firstSp.day>=1;
+    // must be same cluster
+    if(thisCluster!==firstCluster){ alert('Copy-trade only within the SAME cluster. Currently selecting from C'+firstCluster+'.'); return; }
+    // mixing occupied + empty not allowed
+    if(thisOccupied!==firstOccupied){ alert('Select either all empty spots (to open together) OR all occupied spots on the same day.'); return; }
+    // if occupied, must be same day
+    if(thisOccupied && firstOccupied && sp.day!==firstSp.day){ alert('Copy-trade only accounts on the SAME day. Currently selecting D'+firstSp.day+', this one is D'+sp.day+'.'); return; }
+  }
+  multiSel.add(id);
+  updateMultibar(); render();
+}
+function clearSel(){ multiSel.clear(); updateMultibar(); render(); }
+function updateMultibar(){
+  const bar=document.getElementById('multibar');
+  const n=multiSel.size;
+  document.getElementById('mb-count').textContent=n+' selected';
+  bar.classList.toggle('on', n>0);
+}
+let mmDay=null;
+function openMultiModal(){
+  if(multiSel.size===0) return;
+  const firstSp=state.spots[[...multiSel][0]];
+  const areEmpty = !(firstSp && firstSp.day>=1);
+  mmDay = areEmpty ? 1 : firstSp.day;
+  const kind = areEmpty ? 'empty spots to open' : 'occupied accounts';
+  document.getElementById('mm-sub').textContent=`Applies to ${multiSel.size} ${kind}: ${[...multiSel].join(', ')}`;
+  const dr=document.getElementById('mm-dayrow'); dr.innerHTML='';
+  for(let d=1;d<=14;d++){ const L=LADDER[d];
+    dr.innerHTML+=`<button class="daybtn d-${L.zone} ${d===mmDay?'sel':''}" onclick="mmPickDay(${d})">${d}</button>`; }
+  document.getElementById('mm-cost').value='';
+  document.getElementById('mm-extra').value='';
+  document.getElementById('mm-amount').value='';
+  mmSync();
+  document.getElementById('overlay4').classList.add('on');
+}
+function mmPickDay(d){ mmDay=d;
+  document.querySelectorAll('#mm-dayrow .daybtn').forEach((b,i)=>b.classList.toggle('sel',i+1===d));
+  mmSync(); }
+function mmSync(){
+  const L=LADDER[mmDay];
+  document.getElementById('mm-cost').placeholder=String(L.inv);
+  document.getElementById('mm-amount').placeholder=String(L.prof);
+  document.getElementById('mm-hint').innerHTML=`Day ${mmDay}: benchmark cost <b>$${L.inv}</b> · forward EV <b>~$${fwdEV(mmDay).toFixed(0)}</b> · ×${multiSel.size} accounts`;
+  mmNetPreview();
+}
+function mmNetPreview(){
+  const el=document.getElementById('mm-net-preview'); if(!el) return;
+  const typedCost=parseFloat(document.getElementById('mm-cost').value);
+  const extra=parseFloat(document.getElementById('mm-extra').value)||0;
+  const invested=(isNaN(typedCost)?LADDER[mmDay].inv:typedCost)+extra;
+  const gross=parseFloat(document.getElementById('mm-amount').value);
+  const n=multiSel.size;
+  if(isNaN(gross)){ el.innerHTML=`On <b>blow</b>: net per acct = gross − $${invested.toLocaleString()}. Total across ${n} accts.`; }
+  else { const netEach=gross-invested; const netAll=netEach*n;
+    el.innerHTML=`Per acct: $${gross.toLocaleString()} − $${invested.toLocaleString()} = <b style="color:${netEach>=0?'var(--profit)':'var(--loss)'}">${netEach>=0?'+':''}$${(Math.round(netEach*100)/100).toLocaleString()}</b> · ×${n} = <b style="color:${netAll>=0?'var(--profit)':'var(--loss)'}">${netAll>=0?'+':''}$${(Math.round(netAll*100)/100).toLocaleString()} total</b>`;
+  }
+}
+function mmReadCost(){ const v=parseFloat(document.getElementById('mm-cost').value); return isNaN(v)?LADDER[mmDay].inv:v; }
+function mmReadExtra(){ const v=parseFloat(document.getElementById('mm-extra').value); return isNaN(v)?0:v; }
+function mmReadAmount(){ const v=parseFloat(document.getElementById('mm-amount').value); return isNaN(v)?LADDER[mmDay].prof:v; }
+
+function multiSetDay(){
+  const cost=mmReadCost(), extra=mmReadExtra();
+  multiSel.forEach(id=>{
+    const prevExtra=(state.spots[id] && state.spots[id].extra) || 0;
+    const addedExtra = extra>0 && extra!==prevExtra;
+    if(addedExtra){ markTraded(id); state.deployedToday=(state.deployedToday||0)+extra; }
+    state.spots[id]={day:mmDay,cost:cost,extra:extra};
+  });
+  closeMulti(); render();
+}
+function multiFree(){
+  multiSel.forEach(id=>{ state.spots[id]={day:0,cost:0,extra:0}; });
+  multiSel.clear(); updateMultibar(); closeMulti(); render();
+}
+function multiOutcome(type){
+  const amt=mmReadAmount();
+  const invested=mmReadCost()+mmReadExtra();
+  const now=new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+  multiSel.forEach(id=>{
+    markTraded(id);
+    if(type==='blew'){
+      const net=amt-invested;
+      state.todayLog.push({time:now,id:id,amount:amt,sunk:invested,profit:net,day:mmDay,type:'blew'});
+      state.todayProfit+=net;
+      state.spots[id]={day:0,cost:0,extra:0};
+    } else {
+      const net=amt-invested;
+      state.todayLog.push({time:now,id:id,amount:amt,invested:invested,profit:net,day:mmDay,type:'payout'});
+      state.todayPayouts+=net;
+      state.spots[id]={day:mmDay,cost:0,extra:0};
+    }
+  });
+  multiSel.clear(); updateMultibar(); closeMulti(); render();
+}
+function closeMulti(){ document.getElementById('overlay4').classList.remove('on'); }
+document.getElementById('overlay4').addEventListener('click',e=>{ if(e.target.id==='overlay4') closeMulti(); });
+document.getElementById('mm-cost').addEventListener('input',mmNetPreview);
+document.getElementById('mm-amount').addEventListener('input',mmNetPreview);
+document.getElementById('mm-extra').addEventListener('input',mmNetPreview);
+function closeModal(){ document.getElementById('overlay').classList.remove('on'); activeId=null; }
+
+// Delete / undo a logged entry: reverse its profit from the day totals, then remove it.
+function deleteLog(idx){
+  const w = state.todayLog[idx];
+  if(!w) return;
+  const net = (w.profit!=null?w.profit:w.amount);
+  if(!confirm('Delete this entry? '+(w.type==='payout'?'payout':'blew')+' on D'+w.day+' -> '+(net>=0?'+':'')+'$'+net+'. This reverses it from today total.')) return;
+  if(w.type==='payout'){ state.todayPayouts -= net; }
+  else { state.todayProfit -= net; }
+  state.todayLog.splice(idx,1);
+  render();
+}
+document.getElementById('overlay').addEventListener('click',e=>{ if(e.target.id==='overlay') closeModal(); });
+
+function renderHistory(){
+  const h=state.history;
+  const sumEl=document.getElementById('pnl-summary');
+  const chartEl=document.getElementById('pnl-chart');
+  const tableEl=document.getElementById('pnl-table');
+  if(h.length===0){ sumEl.innerHTML='';
+    chartEl.innerHTML='<div class="pnl-empty">No days archived yet. Hit "New Day" to bank today.</div>';
+    tableEl.innerHTML=''; return; }
+  const totPay=h.reduce((s,d)=>s+(d.payouts||0),0);
+  const totAll=h.reduce((s,d)=>s+d.total,0);
+  const avg=totAll/h.length; const best=Math.max(...h.map(d=>d.total));
+  sumEl.innerHTML=`
+    ${pcell('Days',h.length,'var(--ink)')}
+    ${pcell('Total Profit','+$'+totAll.toLocaleString(),'var(--profit)')}
+    ${pcell('Avg / Day','+$'+Math.round(avg).toLocaleString(),'var(--profit)')}
+    ${pcell('From Payouts','+$'+totPay.toLocaleString(),'var(--payout)')}
+    ${pcell('Best Day','+$'+best.toLocaleString(),'var(--profit)')}`;
+  const maxAbs=Math.max(...h.map(d=>Math.abs(d.total)),1);
+  chartEl.innerHTML=h.map((d,i)=>{ const hgt=Math.abs(d.total)/maxAbs*88;
+    return `<div class="pnl-bar-wrap" onclick="openDrawer(${i})">
+      <div class="pnl-bar ${d.total>=0?'pos':'neg'}" style="height:${hgt}px"></div>
+      <div class="pnl-bar-lbl">D${d.day}</div></div>`; }).join('');
+  tableEl.innerHTML=h.slice().reverse().map(d=>{
+    const realIdx=h.indexOf(d);
+    const dt=d.date?new Date(d.date).toLocaleDateString('en-GB',{day:'2-digit',month:'short'}):'';
+    const nb=(d.blownOverride!=null)?d.blownOverride:(d.log||[]).filter(l=>l.type==='blew').length;
+    const np=(d.log||[]).filter(l=>l.type==='payout').length;
+    return `<div class="pnl-row" onclick="openDrawer(${realIdx})">
+      <span class="pd">DAY ${d.day}</span><span class="pdate">${dt}</span>
+      <span class="pwins">${nb}b · ${np}p</span>
+      <span class="pnet pos">+$${d.total.toLocaleString()}</span></div>`;
+  }).join('');
+}
+function pcell(k,v,col){ return `<div class="pnl-cell"><div class="k">${k}</div><div class="v" style="color:${col}">${v}</div></div>`; }
+
+// ── PACKAGES (clusters grouped by color) ────────────────────────────
+function clusterOf(id){ return parseInt(id.split('-')[0],10); }
+function colorOf(c){ return (state.colors && state.colors[c]) ? state.colors[c] : PACKAGE_COLORS[0].hex; }
+function pkgNameFor(hex){ const p=PACKAGE_COLORS.find(p=>p.hex===hex); return p?p.name:'Custom'; }
+
+function netOfLog(w){
+  if(w.type==='payout') return (w.profit!=null?w.profit:w.amount);
+  return (w.profit!=null?w.profit:w.amount); // blew already net
+}
+
+// ── EQUITY CURVE (from banked history) ──────────────────────────────
+function renderEquity(){
+  const el=document.getElementById('equity-chart');
+  const totEl=document.getElementById('eq-total');
+  if(!el) return;
+  const h=state.history||[];
+  // cumulative running total of each day's banked total
+  let cum=0; const pts=[{day:0,val:0}];
+  h.forEach(d=>{ cum+=(d.total||0); pts.push({day:d.day,val:cum}); });
+  if(totEl) totEl.textContent=(cum>=0?'+$':'-$')+Math.abs(Math.round(cum)).toLocaleString();
+  if(pts.length<2){ el.innerHTML='<div class="eq-empty">No banked days yet — hit "New Day" to build the curve.</div>'; return; }
+
+  const W=800, H=180, padL=8, padR=8, padT=14, padB=22;
+  const vals=pts.map(p=>p.val);
+  const min=Math.min(0,...vals), max=Math.max(...vals,1);
+  const range=(max-min)||1;
+  const x=i=>padL+(i/(pts.length-1))*(W-padL-padR);
+  const y=v=>padT+(1-(v-min)/range)*(H-padT-padB);
+
+  let line='', area='';
+  pts.forEach((p,i)=>{ const px=x(i),py=y(p.val); line+=(i===0?'M':'L')+px.toFixed(1)+' '+py.toFixed(1)+' '; });
+  area=line+`L ${x(pts.length-1).toFixed(1)} ${y(min).toFixed(1)} L ${x(0).toFixed(1)} ${y(min).toFixed(1)} Z`;
+
+  // zero baseline
+  const zeroY=y(0);
+  const dots=pts.map((p,i)=>`<circle cx="${x(i).toFixed(1)}" cy="${y(p.val).toFixed(1)}" r="3" fill="var(--cool)"/>`).join('');
+  const labels=pts.map((p,i)=> i===0?'':`<text x="${x(i).toFixed(1)}" y="${H-6}" text-anchor="middle" font-size="9" fill="var(--faint)" font-family="JetBrains Mono">D${p.day}</text>`).join('');
+
+  el.innerHTML=`<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
+    <defs><linearGradient id="eqg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="var(--cool)" stop-opacity="0.28"/>
+      <stop offset="100%" stop-color="var(--cool)" stop-opacity="0"/>
+    </linearGradient></defs>
+    <line x1="${padL}" y1="${zeroY.toFixed(1)}" x2="${W-padR}" y2="${zeroY.toFixed(1)}" stroke="var(--line2)" stroke-width="1" stroke-dasharray="3 3"/>
+    <path d="${area}" fill="url(#eqg)"/>
+    <path d="${line}" fill="none" stroke="var(--cool)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+    ${dots}${labels}
+  </svg>`;
+}
+
+// ── POSITIONS TABLE (all live accounts) ─────────────────────────────
+function zoneColor(day){
+  if(day>=8) return 'var(--cool)';
+  if(day>=4) return 'var(--deep)';
+  if(day>=1) return 'var(--live)';
+  return 'var(--faint)';
+}
+function renderPositions(){
+  const el=document.getElementById('positions-table'); if(!el) return;
+  const nCl=(state.capClusters&&state.capClusters>0)?state.capClusters:N_CLUSTERS;
+  const nAc=(state.capAccts&&state.capAccts>0)?state.capAccts:ACCTS_PER_CLUSTER;
+  const rows=[];
+  for(let c=1;c<=nCl;c++) for(let a=1;a<=nAc;a++){
+    const id=`${c}-${a}`; const sp=state.spots[id];
+    if(sp && sp.day>=1){
+      const tied=(sp.cost||0)+(sp.extra||0);
+      const nm=(state.names&&state.names[c])?state.names[c]:'C'+c;
+      rows.push({id,c,a,day:sp.day,tied,fwd:fwdEV(sp.day),name:nm});
+    }
+  }
+  rows.sort((x,y)=> y.day-x.day || x.c-y.c || x.a-y.a);
+  const head=`<thead><tr>
+    <th>Account</th><th>Cluster</th><th class="num">Day</th><th class="num">Invested</th><th class="num">Fwd EV</th>
+  </tr></thead>`;
+  if(rows.length===0){ el.innerHTML=head+`<tbody><tr class="pos-empty"><td colspan="5">No live positions. Tap a slot to open one.</td></tr></tbody>`; return; }
+  const body=rows.map(r=>{
+    const zc=zoneColor(r.day);
+    return `<tr onclick="openModal('${r.id}')">
+      <td>C${r.c}·A${r.a}</td>
+      <td class="pos-name">${r.name}</td>
+      <td class="num"><span class="pos-day-badge" style="background:${zc}22;color:${zc}">D${r.day}</span></td>
+      <td class="num">$${Math.round(r.tied).toLocaleString()}</td>
+      <td class="num pos-fwd">~$${Math.round(r.fwd).toLocaleString()}</td>
+    </tr>`;
+  }).join('');
+  el.innerHTML=head+`<tbody>${body}</tbody>`;
+}
+
+function renderPackages(){
+  const el=document.getElementById('packages');
+  const nClusters=(state.capClusters&&state.capClusters>0)?state.capClusters:N_CLUSTERS;
+  // group clusters by color
+  const groups={}; // hex -> {clusters:[], today:0, week:0}
+  for(let c=1;c<=nClusters;c++){
+    const hex=colorOf(c);
+    if(!groups[hex]) groups[hex]={clusters:[],today:0,week:0};
+    groups[hex].clusters.push(c);
+  }
+  // today's net per color (from todayLog)
+  state.todayLog.forEach(w=>{
+    const c=clusterOf(w.id); const hex=colorOf(c);
+    if(groups[hex]) groups[hex].today += netOfLog(w);
+  });
+  // week = last 7 archived days + today
+  const recent = state.history.slice(-7);
+  recent.forEach(d=>{
+    (d.log||[]).forEach(w=>{
+      const c=clusterOf(w.id); const hex=colorOf(c);
+      if(groups[hex]) groups[hex].week += netOfLog(w);
+    });
+  });
+  Object.keys(groups).forEach(hex=>{ groups[hex].week += groups[hex].today; });
+
+  const keys=Object.keys(groups);
+  if(keys.length===0){ el.innerHTML='<div class="pkg-empty">No clusters yet.</div>'; return; }
+  el.innerHTML=keys.map(hex=>{
+    const g=groups[hex];
+    const nm=pkgNameFor(hex);
+    const clusterLabels=g.clusters.map(c=>(state.names&&state.names[c])?state.names[c]:'C'+c).join(', ');
+    return `<div class="pkg" style="--c:${hex}">
+      <div class="pkg-head"><span class="pkg-swatch" style="background:${hex}"></span>
+        <span class="pkg-name" style="color:${hex}">${nm}</span>
+        <span class="pkg-clusters">${g.clusters.length} cl</span></div>
+      <div class="pkg-stat"><span class="pl">Today net</span><span class="pv" style="color:${g.today>=0?'var(--profit)':'var(--loss)'}">${g.today>=0?'+':''}$${Math.round(g.today).toLocaleString()}</span></div>
+      <div class="pkg-stat"><span class="pl">Week net</span><span class="pv" style="color:${g.week>=0?'var(--profit)':'var(--loss)'}">${g.week>=0?'+':''}$${Math.round(g.week).toLocaleString()}</span></div>
+      <div class="pkg-stat"><span class="pl">Clusters</span><span class="pv" style="color:var(--dim); font-weight:400; font-size:0.55rem">${clusterLabels}</span></div>
+    </div>`;
+  }).join('');
+}
+// inject the ::before color
+const pkgStyle=document.createElement('style');
+pkgStyle.textContent='.pkg::before{background:var(--c);}';
+document.head.appendChild(pkgStyle);
+
+// ── COLOR / SHEET CONTROLS ──────────────────────────────────────────
+function cycleColor(c){
+  if(!state.colors) state.colors={};
+  const cur=colorOf(c);
+  const idx=PACKAGE_COLORS.findIndex(p=>p.hex===cur);
+  const next=PACKAGE_COLORS[(idx+1)%PACKAGE_COLORS.length];
+  state.colors[c]=next.hex;
+  render();
+}
+function setSheet(c){
+  const cur=(state.sheets&&state.sheets[c])?state.sheets[c]:'';
+  const url=prompt('Paste the Google Sheets URL for cluster '+((state.names&&state.names[c])?state.names[c]:'C'+c)+':', cur);
+  if(url===null) return;
+  if(!state.sheets) state.sheets={};
+  state.sheets[c]=url.trim();
+  render();
+}
+function openSheet(c){
+  const url=(state.sheets&&state.sheets[c])?state.sheets[c]:'';
+  if(!url){ setSheet(c); return; }
+  window.open(url,'_blank');
+}
+
+let editDayIdx=null;
+function openDrawer(idx){
+  const d=state.history[idx]; if(!d) return;
+  editDayIdx=idx;
+  document.getElementById('d-title').textContent='Day '+d.day+' detail';
+  const dt=d.date?new Date(d.date).toLocaleDateString('en-GB',{weekday:'long',day:'2-digit',month:'short',year:'numeric'}):'';
+  document.getElementById('d-sub').textContent=`${dt} · total +$${d.total.toLocaleString()} (blows +$${d.profit.toLocaleString()} · payout profit +$${(d.payouts||0).toLocaleString()}) · deployed $${(d.deployed||0).toLocaleString()}`;
+  // prefill edit fields
+  const blownCount = (d.blownOverride!=null) ? d.blownOverride : (d.log||[]).filter(l=>l.type==='blew').length;
+  document.getElementById('ed-profit').value = d.profit;
+  document.getElementById('ed-payout').value = d.payoutGross!=null ? d.payoutGross : ((d.log||[]).filter(l=>l.type==='payout').reduce((s,l)=>s+(l.amount||0),0));
+  document.getElementById('ed-payoutprofit').value = d.payouts||0;
+  document.getElementById('ed-deployed').value = d.deployed||0;
+  document.getElementById('ed-blown').value = blownCount;
+  const wEl=document.getElementById('d-wins');
+  if(!d.log||d.log.length===0){ wEl.innerHTML='<div class="log-empty">No individual entries recorded.</div>'; }
+  else { wEl.innerHTML=d.log.slice().reverse().map(w=>{
+    if(w.type==='payout'){
+      return `<div class="logrow"><span class="lt">${w.time}</span>
+        <span class="lid">C${w.id.split('-')[0]}·A${w.id.split('-')[1]}</span>
+        <span class="ld"><span class="tag-payout">payout</span> D${w.day} <span class="inv-note">($${w.amount}−$${w.invested})</span></span>
+        <span class="lp pay">+$${(w.profit!=null?w.profit:w.amount).toLocaleString()}</span></div>`;
+    }
+    return `<div class="logrow"><span class="lt">${w.time}</span>
+      <span class="lid">C${w.id.split('-')[0]}·A${w.id.split('-')[1]}</span>
+      <span class="ld">blew D${w.day}</span>
+      <span class="lp pos">+$${w.amount.toLocaleString()}</span></div>`; }).join(''); }
+  document.getElementById('overlay2').classList.add('on');
+}
+function saveDayEdit(){
+  if(editDayIdx==null) return;
+  const d=state.history[editDayIdx]; if(!d) return;
+  const p=parseFloat(document.getElementById('ed-profit').value);
+  const pg=parseFloat(document.getElementById('ed-payout').value);
+  const pp=parseFloat(document.getElementById('ed-payoutprofit').value);
+  const dep=parseFloat(document.getElementById('ed-deployed').value);
+  const bl=parseInt(document.getElementById('ed-blown').value,10);
+  if(!isNaN(p)) d.profit=p;
+  if(!isNaN(pg)) d.payoutGross=pg;       // gross payout received (does NOT hit total)
+  if(!isNaN(pp)) d.payouts=pp;           // payout PROFIT (contributes to total)
+  if(!isNaN(dep)) d.deployed=dep;
+  if(!isNaN(bl)) d.blownOverride=bl;
+  // total profit = blow profit + payout profit (gross payout excluded)
+  d.total = (d.profit||0) + (d.payouts||0);
+  save(); render();
+  closeDrawer();
+}
+function closeDrawer(){ document.getElementById('overlay2').classList.remove('on'); }
+document.getElementById('overlay2').addEventListener('click',e=>{ if(e.target.id==='overlay2') closeDrawer(); });
+
+function renameCluster(c){
+  const cur = (state.names && state.names[c]) ? state.names[c] : 'C'+c;
+  const name = prompt('Name for this cluster:', cur);
+  if(name===null) return;
+  if(!state.names) state.names={};
+  state.names[c] = name.trim() || ('C'+c);
+  render();
+}
+
+function setCapacity(){
+  const cc = state.capClusters || N_CLUSTERS;
+  const ca = state.capAccts || ACCTS_PER_CLUSTER;
+  document.getElementById('cap-clusters').value = state.capClusters ? cc : '';
+  document.getElementById('cap-accts').value = state.capAccts ? ca : '';
+  updateCapPreview();
+  buildNameList();
+  document.getElementById('overlay3').classList.add('on');
+}
+function buildNameList(){
+  const cc = parseInt(document.getElementById('cap-clusters').value,10) || N_CLUSTERS;
+  const wrap = document.getElementById('cap-names');
+  let rows='';
+  for(let c=1;c<=cc;c++){
+    const nm = (state.names && state.names[c]) ? state.names[c] : ('C'+c);
+    const hex = colorOf(c);
+    const swatches = PACKAGE_COLORS.map(p=>
+      `<span class="cn-swatch ${p.hex===hex?'sel':''}" style="background:${p.hex}" data-cluster="${c}" data-hex="${p.hex}" onclick="pickColorFor(${c},'${p.hex}')"></span>`
+    ).join('');
+    rows += `<div class="cap-name-row">
+      <span class="cn-tag">C${c}</span>
+      <input type="text" data-cluster="${c}" value="${nm.replace(/"/g,'&quot;')}" placeholder="C${c}">
+      <div class="cn-swatches">${swatches}</div></div>`;
+  }
+  wrap.innerHTML = rows;
+}
+function pickColorFor(c,hex){
+  if(!state.colors) state.colors={};
+  state.colors[c]=hex;
+  buildNameList(); // refresh swatches
+}
+function updateCapPreview(){
+  const cc = parseInt(document.getElementById('cap-clusters').value,10) || N_CLUSTERS;
+  const ca = parseInt(document.getElementById('cap-accts').value,10) || ACCTS_PER_CLUSTER;
+  const target = cc*ca;
+  document.getElementById('cap-preview').innerHTML =
+    `Target: <b>${cc} clusters × ${ca} accounts = ${target} active spots</b>. Capacity % = live spots ÷ ${target}.`;
+}
+function saveCapacity(){
+  const cc = parseInt(document.getElementById('cap-clusters').value,10);
+  const ca = parseInt(document.getElementById('cap-accts').value,10);
+  if(isNaN(cc)||isNaN(ca)||cc<=0||ca<=0){ alert('Enter valid numbers for both fields.'); return; }
+  state.capClusters = cc;
+  state.capAccts = ca;
+  state.capacityTarget = cc*ca;
+  // save names
+  if(!state.names) state.names={};
+  document.querySelectorAll('#cap-names input').forEach(inp=>{
+    const c = inp.getAttribute('data-cluster');
+    const v = inp.value.trim();
+    state.names[c] = v || ('C'+c);
+  });
+  document.getElementById('overlay3').classList.remove('on');
+  render();
+}
+function clearCapacity(){
+  state.capClusters = N_CLUSTERS; state.capAccts = ACCTS_PER_CLUSTER; state.capacityTarget = 0;
+  document.getElementById('overlay3').classList.remove('on');
+  render();
+}
+document.getElementById('overlay3').addEventListener('click',e=>{ if(e.target.id==='overlay3') document.getElementById('overlay3').classList.remove('on'); });
+document.getElementById('cap-clusters').addEventListener('input',()=>{ updateCapPreview(); buildNameList(); });
+document.getElementById('cap-accts').addEventListener('input',updateCapPreview);
+
+function rollDay(){
+  const total=state.todayProfit+state.todayPayouts;
+  const deployed = window._deployedNow || 0;
+  const msg = 'Bank today: +$'+total.toLocaleString()+'?\\n\\n'
+    + 'Equity currently down (invested): $'+deployed.toLocaleString()+'\\n'
+    + 'Extra folds into cost · accounts you traded advance +1 day.';
+  if(!confirm(msg)) return;
+  const payoutGross = state.todayLog.filter(l=>l.type==='payout').reduce((s,l)=>s+(l.amount||0),0);
+  state.history.push({ day:state.dayCount, profit:state.todayProfit, payouts:state.todayPayouts,
+    payoutGross:payoutGross, total:total, deployed:deployed, log:state.todayLog.slice(), date:new Date().toISOString() });
+
+  // End-of-day processing for every occupied account:
+  const traded = new Set(state.tradedToday||[]);
+  Object.keys(state.spots).forEach(id=>{
+    const sp=state.spots[id];
+    if(sp.day>=1){
+      // 1) fold extra into cost so cost accumulates, reset extra
+      sp.cost = (sp.cost||0) + (sp.extra||0);
+      sp.extra = 0;
+      // 2) advance only accounts actually traded today, +1 day (capped at 14)
+      if(traded.has(id) && sp.day<14){ sp.day = sp.day+1; }
+    }
+  });
+
+  state.dayCount++; state.todayProfit=0; state.todayPayouts=0; state.todayLog=[]; state.tradedToday=[]; state.deployedToday=0;
+  render();
+  // auto-download a backup every New Day so you always have a file even if browser storage clears
+  exportData();
+}
+function exportData(){
+  const stamp=new Date().toISOString().slice(0,16).replace(/[:T]/g,'-');
+  const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob); const a=document.createElement('a');
+  a.href=url; a.download=`spotdesk_day${state.dayCount}_${stamp}.json`; a.click(); URL.revokeObjectURL(url);
+}
+function importData(ev){
+  const file=ev.target.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=function(e){
+    try {
+      const data=JSON.parse(e.target.result);
+      if(!data.spots || !data.history){ alert('This does not look like a SPOTDESK backup file.'); return; }
+      if(!confirm('Import this backup? It will REPLACE all current data (spots, history, names, colors).')) return;
+      state=data;
+      // ensure new fields exist for older backups
+      if(!state.tradedToday) state.tradedToday=[];
+      if(state.deployedToday==null) state.deployedToday=0;
+      if(!state.names) state.names={};
+      if(!state.colors) state.colors={};
+      if(!state.sheets) state.sheets={};
+      save(); render();
+      alert('Backup imported — you are restored to day '+state.dayCount+'.');
+    } catch(err){ alert('Could not read that file: '+err.message); }
+  };
+  reader.readAsText(file);
+  ev.target.value=''; // allow re-importing same file
+}
+function resetAll(){ if(!confirm('Erase ALL data and start fresh? This cannot be undone.')) return; state=freshState(); render(); }
+
+// Warn before closing the tab if there's un-banked activity today
+window.addEventListener('beforeunload', function(e){
+  const hasActivity = (state.todayLog && state.todayLog.length>0) || (state.deployedToday>0);
+  if(hasActivity || _lastSaveOk===false){
+    e.preventDefault();
+    e.returnValue='You have activity today. Export a backup before closing so you do not lose it.';
+    return e.returnValue;
+  }
+});
+
+// Startup persistence test: write + read a probe to see if storage actually sticks
+(function persistenceCheck(){
+  try{
+    localStorage.setItem('spotdesk_probe','1');
+    const ok = localStorage.getItem('spotdesk_probe')==='1';
+    localStorage.removeItem('spotdesk_probe');
+    _lastSaveOk = ok;
+  }catch(e){ _lastSaveOk=false; }
+})();
+
+render();
+updateSaveIndicator();
+
+</script>
+</body>
+</html>

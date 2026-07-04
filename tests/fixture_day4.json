@@ -1,0 +1,806 @@
+{
+  "spots": {
+    "1-1": {
+      "day": 6,
+      "cost": 1590,
+      "extra": 0
+    },
+    "1-2": {
+      "day": 3,
+      "cost": 380,
+      "extra": 0
+    },
+    "1-3": {
+      "day": 0,
+      "cost": 0,
+      "extra": 0
+    },
+    "1-4": {
+      "day": 5,
+      "cost": 1590,
+      "extra": 0
+    },
+    "1-5": {
+      "day": 0,
+      "cost": 0,
+      "extra": 0
+    },
+    "2-1": {
+      "day": 8,
+      "cost": 1655,
+      "extra": 0
+    },
+    "2-2": {
+      "day": 8,
+      "cost": 1655,
+      "extra": 0
+    },
+    "2-3": {
+      "day": 0,
+      "cost": 0,
+      "extra": 0
+    },
+    "2-4": {
+      "day": 0,
+      "cost": 0,
+      "extra": 0
+    },
+    "2-5": {
+      "day": 0,
+      "cost": 0,
+      "extra": 0
+    },
+    "3-1": {
+      "day": 0,
+      "cost": 0,
+      "extra": 0
+    },
+    "3-2": {
+      "day": 0,
+      "cost": 0,
+      "extra": 0
+    },
+    "3-3": {
+      "day": 0,
+      "cost": 0,
+      "extra": 0
+    },
+    "3-4": {
+      "day": 0,
+      "cost": 0,
+      "extra": 0
+    },
+    "3-5": {
+      "day": 0,
+      "cost": 0,
+      "extra": 0
+    },
+    "4-1": {
+      "day": 3,
+      "cost": 259,
+      "extra": 0
+    },
+    "4-2": {
+      "day": 3,
+      "cost": 259,
+      "extra": 0
+    },
+    "4-3": {
+      "day": 0,
+      "cost": 0,
+      "extra": 0
+    },
+    "4-4": {
+      "day": 0,
+      "cost": 0,
+      "extra": 0
+    },
+    "4-5": {
+      "day": 0,
+      "cost": 0,
+      "extra": 0
+    },
+    "5-1": {
+      "day": 7,
+      "cost": 1696,
+      "extra": 0
+    },
+    "5-2": {
+      "day": 7,
+      "cost": 1697,
+      "extra": 0
+    },
+    "5-3": {
+      "day": 3,
+      "cost": 383,
+      "extra": 0
+    },
+    "5-4": {
+      "day": 3,
+      "cost": 383,
+      "extra": 0
+    },
+    "5-5": {
+      "day": 0,
+      "cost": 0,
+      "extra": 0
+    },
+    "6-1": {
+      "day": 0,
+      "cost": 0,
+      "extra": 0
+    },
+    "6-2": {
+      "day": 0,
+      "cost": 0,
+      "extra": 0
+    },
+    "6-3": {
+      "day": 0,
+      "cost": 0,
+      "extra": 0
+    },
+    "6-4": {
+      "day": 0,
+      "cost": 0,
+      "extra": 0
+    },
+    "6-5": {
+      "day": 0,
+      "cost": 0,
+      "extra": 0
+    },
+    "7-1": {
+      "day": 2,
+      "cost": 213,
+      "extra": 0
+    },
+    "7-2": {
+      "day": 2,
+      "cost": 213,
+      "extra": 0
+    },
+    "7-3": {
+      "day": 0,
+      "cost": 0,
+      "extra": 0
+    },
+    "7-4": {
+      "day": 0,
+      "cost": 0,
+      "extra": 0
+    },
+    "7-5": {
+      "day": 0,
+      "cost": 0,
+      "extra": 0
+    },
+    "8-1": {
+      "day": 0,
+      "cost": 0,
+      "extra": 0
+    },
+    "8-2": {
+      "day": 0,
+      "cost": 0,
+      "extra": 0
+    },
+    "8-3": {
+      "day": 0,
+      "cost": 0,
+      "extra": 0
+    },
+    "8-4": {
+      "day": 0,
+      "cost": 0,
+      "extra": 0
+    },
+    "8-5": {
+      "day": 0,
+      "cost": 0,
+      "extra": 0
+    },
+    "9-1": {
+      "day": 3,
+      "cost": 381,
+      "extra": 0
+    },
+    "9-2": {
+      "day": 3,
+      "cost": 381,
+      "extra": 0
+    },
+    "9-3": {
+      "day": 0,
+      "cost": 0,
+      "extra": 0
+    },
+    "9-4": {
+      "day": 0,
+      "cost": 0,
+      "extra": 0
+    },
+    "9-5": {
+      "day": 0,
+      "cost": 0,
+      "extra": 0
+    },
+    "10-1": {
+      "day": 11,
+      "cost": 198.53,
+      "extra": 0
+    },
+    "10-2": {
+      "day": 11,
+      "cost": 198.53,
+      "extra": 0
+    },
+    "10-3": {
+      "day": 0,
+      "cost": 0,
+      "extra": 0
+    },
+    "10-4": {
+      "day": 0,
+      "cost": 0,
+      "extra": 0
+    },
+    "10-5": {
+      "day": 0,
+      "cost": 0,
+      "extra": 0
+    },
+    "11-1": {
+      "day": 0,
+      "cost": 0,
+      "extra": 0
+    },
+    "11-2": {
+      "day": 0,
+      "cost": 0,
+      "extra": 0
+    },
+    "11-3": {
+      "day": 0,
+      "cost": 0,
+      "extra": 0
+    },
+    "11-4": {
+      "day": 0,
+      "cost": 0,
+      "extra": 0
+    },
+    "11-5": {
+      "day": 0,
+      "cost": 0,
+      "extra": 0
+    },
+    "12-1": {
+      "day": 0,
+      "cost": 0,
+      "extra": 0
+    },
+    "12-2": {
+      "day": 0,
+      "cost": 0,
+      "extra": 0
+    },
+    "12-3": {
+      "day": 0,
+      "cost": 0,
+      "extra": 0
+    },
+    "12-4": {
+      "day": 0,
+      "cost": 0,
+      "extra": 0
+    },
+    "12-5": {
+      "day": 0,
+      "cost": 0,
+      "extra": 0
+    },
+    "13-1": {
+      "day": 0,
+      "cost": 0,
+      "extra": 0
+    },
+    "13-2": {
+      "day": 0,
+      "cost": 0,
+      "extra": 0
+    },
+    "13-3": {
+      "day": 0,
+      "cost": 0,
+      "extra": 0
+    },
+    "13-4": {
+      "day": 0,
+      "cost": 0,
+      "extra": 0
+    },
+    "13-5": {
+      "day": 0,
+      "cost": 0,
+      "extra": 0
+    },
+    "14-1": {
+      "day": 2,
+      "cost": 204,
+      "extra": 0
+    },
+    "14-2": {
+      "day": 2,
+      "cost": 204,
+      "extra": 0
+    },
+    "14-3": {
+      "day": 0,
+      "cost": 0,
+      "extra": 0
+    },
+    "14-4": {
+      "day": 0,
+      "cost": 0,
+      "extra": 0
+    },
+    "14-5": {
+      "day": 0,
+      "cost": 0,
+      "extra": 0
+    },
+    "15-1": {
+      "day": 8,
+      "cost": 1470,
+      "extra": 0
+    },
+    "15-2": {
+      "day": 0,
+      "cost": 0,
+      "extra": 0
+    },
+    "15-3": {
+      "day": 0,
+      "cost": 0,
+      "extra": 0
+    },
+    "15-4": {
+      "day": 0,
+      "cost": 0,
+      "extra": 0
+    },
+    "15-5": {
+      "day": 0,
+      "cost": 0,
+      "extra": 0
+    },
+    "16-1": {
+      "day": 3,
+      "cost": 358.35,
+      "extra": 0
+    },
+    "16-2": {
+      "day": 3,
+      "cost": 358.35,
+      "extra": 0
+    },
+    "16-3": {
+      "day": 0,
+      "cost": 0,
+      "extra": 0
+    },
+    "16-4": {
+      "day": 0,
+      "cost": 0,
+      "extra": 0
+    },
+    "16-5": {
+      "day": 0,
+      "cost": 0,
+      "extra": 0
+    },
+    "17-1": {
+      "day": 2,
+      "cost": 221,
+      "extra": 0
+    },
+    "17-2": {
+      "day": 2,
+      "cost": 221,
+      "extra": 0
+    },
+    "17-3": {
+      "day": 0,
+      "cost": 0,
+      "extra": 0
+    },
+    "17-4": {
+      "day": 0,
+      "cost": 0,
+      "extra": 0
+    },
+    "17-5": {
+      "day": 0,
+      "cost": 0,
+      "extra": 0
+    },
+    "18-1": {
+      "day": 3,
+      "cost": 374,
+      "extra": 0
+    },
+    "18-2": {
+      "day": 3,
+      "cost": 374,
+      "extra": 0
+    },
+    "18-3": {
+      "day": 0,
+      "cost": 0,
+      "extra": 0
+    },
+    "18-4": {
+      "day": 0,
+      "cost": 0,
+      "extra": 0
+    },
+    "18-5": {
+      "day": 0,
+      "cost": 0,
+      "extra": 0
+    },
+    "19-1": {
+      "day": 2,
+      "cost": 95,
+      "extra": 0
+    },
+    "19-2": {
+      "day": 2,
+      "cost": 95,
+      "extra": 0
+    },
+    "19-3": {
+      "day": 0,
+      "cost": 0,
+      "extra": 0
+    },
+    "19-4": {
+      "day": 0,
+      "cost": 0,
+      "extra": 0
+    },
+    "19-5": {
+      "day": 0,
+      "cost": 0,
+      "extra": 0
+    },
+    "20-1": {
+      "day": 0,
+      "cost": 0,
+      "extra": 0
+    },
+    "20-2": {
+      "day": 0,
+      "cost": 0,
+      "extra": 0
+    },
+    "20-3": {
+      "day": 0,
+      "cost": 0,
+      "extra": 0
+    },
+    "20-4": {
+      "day": 0,
+      "cost": 0,
+      "extra": 0
+    },
+    "20-5": {
+      "day": 0,
+      "cost": 0,
+      "extra": 0
+    }
+  },
+  "todayProfit": 0,
+  "todayPayouts": 0,
+  "todayLog": [],
+  "dayCount": 4,
+  "history": [
+    {
+      "day": 1,
+      "profit": 0,
+      "payouts": 0,
+      "total": 0,
+      "log": [
+        {
+          "time": "15:50",
+          "id": "1-2",
+          "amount": 1796,
+          "day": 7,
+          "type": "payout"
+        }
+      ],
+      "date": "2026-06-30T19:55:35.364Z",
+      "payoutGross": 0,
+      "deployed": 0,
+      "blownOverride": 0
+    },
+    {
+      "day": 2,
+      "profit": 835,
+      "payouts": 746,
+      "total": 1581,
+      "deployed": 2500,
+      "log": [
+        {
+          "time": "16:09",
+          "id": "2-1",
+          "amount": 1797,
+          "invested": 1638,
+          "profit": 159,
+          "day": 7,
+          "type": "payout"
+        },
+        {
+          "time": "17:01",
+          "id": "3-1",
+          "amount": 114,
+          "day": 1,
+          "type": "blew"
+        }
+      ],
+      "date": "2026-06-30T21:04:02.445Z",
+      "blownOverride": 9,
+      "payoutGross": 3578
+    },
+    {
+      "day": 3,
+      "profit": 2044.67,
+      "payouts": 0,
+      "payoutGross": 0,
+      "total": 2044.67,
+      "deployed": 6734.7,
+      "log": [
+        {
+          "time": "00:31",
+          "id": "7-1",
+          "amount": 219,
+          "sunk": 179,
+          "profit": 40,
+          "day": 2,
+          "type": "blew"
+        },
+        {
+          "time": "00:31",
+          "id": "7-1",
+          "amount": 219,
+          "sunk": 179,
+          "profit": 40,
+          "day": 2,
+          "type": "blew"
+        },
+        {
+          "time": "01:41",
+          "id": "20-1",
+          "amount": 214,
+          "sunk": 200,
+          "profit": 14,
+          "day": 2,
+          "type": "blew"
+        },
+        {
+          "time": "01:41",
+          "id": "20-2",
+          "amount": 214,
+          "sunk": 200,
+          "profit": 14,
+          "day": 2,
+          "type": "blew"
+        },
+        {
+          "time": "03:04",
+          "id": "19-1",
+          "amount": 217,
+          "sunk": 175,
+          "profit": 42,
+          "day": 2,
+          "type": "blew"
+        },
+        {
+          "time": "03:04",
+          "id": "19-2",
+          "amount": 217,
+          "sunk": 175,
+          "profit": 42,
+          "day": 2,
+          "type": "blew"
+        },
+        {
+          "time": "03:16",
+          "id": "17-1",
+          "amount": 764,
+          "sunk": 0,
+          "profit": 764,
+          "day": 8,
+          "type": "blew"
+        },
+        {
+          "time": "03:16",
+          "id": "17-2",
+          "amount": 764,
+          "sunk": 0,
+          "profit": 764,
+          "day": 8,
+          "type": "blew"
+        },
+        {
+          "time": "08:38",
+          "id": "17-3",
+          "amount": 438,
+          "sunk": 367,
+          "profit": 71,
+          "day": 3,
+          "type": "blew"
+        },
+        {
+          "time": "08:38",
+          "id": "17-4",
+          "amount": 438,
+          "sunk": 367,
+          "profit": 71,
+          "day": 3,
+          "type": "blew"
+        },
+        {
+          "time": "08:38",
+          "id": "6-2",
+          "amount": 1599,
+          "sunk": 1566,
+          "profit": 33,
+          "day": 7,
+          "type": "blew"
+        },
+        {
+          "time": "08:39",
+          "id": "6-1",
+          "amount": 1599,
+          "sunk": 1616,
+          "profit": -17,
+          "day": 7,
+          "type": "blew"
+        },
+        {
+          "time": "10:17",
+          "id": "11-1",
+          "amount": 450,
+          "sunk": 427,
+          "profit": 23,
+          "day": 3,
+          "type": "blew"
+        },
+        {
+          "time": "10:29",
+          "id": "19-1",
+          "amount": 121,
+          "sunk": 95,
+          "profit": 26,
+          "day": 1,
+          "type": "blew"
+        },
+        {
+          "time": "10:29",
+          "id": "19-2",
+          "amount": 121,
+          "sunk": 95,
+          "profit": 26,
+          "day": 1,
+          "type": "blew"
+        },
+        {
+          "time": "11:04",
+          "id": "17-1",
+          "amount": 118.835,
+          "sunk": 95,
+          "profit": 23.834999999999994,
+          "day": 1,
+          "type": "blew"
+        },
+        {
+          "time": "11:04",
+          "id": "17-2",
+          "amount": 118.835,
+          "sunk": 95,
+          "profit": 23.834999999999994,
+          "day": 1,
+          "type": "blew"
+        },
+        {
+          "time": "12:39",
+          "id": "3-1",
+          "amount": 217,
+          "sunk": 195,
+          "profit": 22,
+          "day": 2,
+          "type": "blew"
+        },
+        {
+          "time": "12:39",
+          "id": "3-2",
+          "amount": 217,
+          "sunk": 195,
+          "profit": 22,
+          "day": 2,
+          "type": "blew"
+        }
+      ],
+      "date": "2026-07-01T16:40:00.000Z"
+    }
+  ],
+  "capacityTarget": 100,
+  "capClusters": 20,
+  "capAccts": 5,
+  "names": {
+    "1": "RAYAN LC",
+    "2": "SHADI TS",
+    "3": "SHADI LC",
+    "4": "MARWAN TS",
+    "5": "MARWAN LC",
+    "6": "SIDI TS",
+    "7": "SIDI LC",
+    "8": "SIDI 2 TS",
+    "9": "SIDI 2 LC",
+    "10": "ISMA TS",
+    "11": "CHAHIN LC",
+    "12": "CHAHIN TS",
+    "13": "SAMY TS",
+    "14": "SAMY LC",
+    "15": "BADIS TS",
+    "16": "BADIS LC",
+    "17": "INESS LC",
+    "18": "SERRINE LC",
+    "19": "FERYEL LC",
+    "20": "ISMA LC"
+  },
+  "colors": {
+    "2": "#00e2a0",
+    "6": "#b794ff",
+    "7": "#b794ff",
+    "8": "#b794ff",
+    "9": "#b794ff",
+    "10": "#4aa8ff",
+    "11": "#4aa8ff",
+    "12": "#4aa8ff",
+    "13": "#4aa8ff",
+    "14": "#4aa8ff",
+    "15": "#4aa8ff",
+    "16": "#4aa8ff",
+    "17": "#4aa8ff",
+    "18": "#4aa8ff",
+    "19": "#4aa8ff",
+    "20": "#4aa8ff"
+  },
+  "tradedToday": [],
+  "deployedToday": 0,
+  "sheets": {
+    "1": "https://docs.google.com/spreadsheets/d/1Em7RqYApyUB_7ZweIuPMgAw3idnGRh9CvFO_f_tQ7Os/edit?gid=0#gid=0",
+    "2": "https://docs.google.com/spreadsheets/d/1E6Bk0kxgCFHLB-Ug2b3FOjan8RY-UdvGvwk4Kmc82b8/edit?gid=0#gid=0",
+    "3": "https://docs.google.com/spreadsheets/d/1LgouQ2AcGlYzgK6th2LLFMuizfzB3uIyMlUCCdND4NA/edit?gid=0#gid=0",
+    "4": "https://docs.google.com/spreadsheets/d/1Idptj6XgbyfwsbpKz7UzBNwf-x7VWofmQTUymhsLBVE/edit?gid=0#gid=0",
+    "5": "https://docs.google.com/spreadsheets/d/1NNbXMwJUY2LyrybLBlidJ1ezLB0eUzBhChbvOx21t7o/edit",
+    "6": "https://docs.google.com/spreadsheets/d/15BCYU0xBHRqStf6igkMShp6iDg3acIquyzlI1hK0fRI/edit?gid=0#gid=0",
+    "7": "https://docs.google.com/spreadsheets/d/1xh2Rgylb3DDnSqjg_U7VaedlzDsE2tSy1NWeFXgbLzQ/edit?gid=0#gid=0",
+    "8": "https://docs.google.com/spreadsheets/d/1ScuNl4k-7Fz7eLHA-CT1Ce8Pw6MwA9hUf9_XdJMSi8o/edit?gid=0#gid=0",
+    "9": "https://docs.google.com/spreadsheets/d/1YToCkj7DtM1-KKr_IW2FgWN20PGUmpnZWgX5TbV2ci4/edit?gid=0#gid=0",
+    "10": "https://docs.google.com/spreadsheets/d/1CoByTH7SffRBLD4-W6wlN5nXw-QrO5L5zrLqvIZfeeU/edit?gid=0#gid=0",
+    "11": "https://docs.google.com/spreadsheets/d/1IvUTegi1C1QHrH8kkRVve8H4mzI7-l6y9fqW1-x4ZHg/edit?gid=0#gid=0",
+    "12": "https://docs.google.com/spreadsheets/d/1cyhTdIrb9rsKXh2Plcy6_jcgystmbZi6w5Y17mcD8sw/edit?ouid=112945275239507747144&usp=sheets_home&ths=true",
+    "13": "https://docs.google.com/spreadsheets/d/1dG4RAjUm05JJKtWCdrx9TMO5JU9VLAWlwvyXVA91RiI/edit",
+    "14": "https://docs.google.com/spreadsheets/d/1lR--oKDOQCuWl8ytZrDj133TgWQ-5aU6q-IZDXKBUgQ/edit?gid=0#gid=0",
+    "15": "https://docs.google.com/spreadsheets/d/19Gg9RFFLB0u_316mm9Sy21MITeKqwuBIIgzeFaOfklM/edit?gid=0#gid=0",
+    "16": "https://docs.google.com/spreadsheets/d/1wJGhrhOyr-4SOs0YFvGCq59Wlc7Yl6yR2X7kHe3jiDs/edit",
+    "17": "https://docs.google.com/spreadsheets/d/11zRasEJ04cLiLs_4dvNJeeA7fahXhzZ-vR13RUSKv_o/edit?gid=0#gid=0",
+    "18": "https://docs.google.com/spreadsheets/d/1_nQNfcruehYSUuSTnQ8Cd3LqXV5EHKhxcj0J5BC0aPc/edit?gid=0#gid=0",
+    "19": "https://docs.google.com/spreadsheets/d/16-lFRhqQ-63jcaotEbI3Ed3XFmVXRH-Idcf_zhebLeU/edit?gid=0#gid=0",
+    "20": "https://docs.google.com/spreadsheets/d/1BzbmRURPnXS14QWpAA-jrCqf2sVEZc-VTm3Q1KRltkc/edit"
+  }
+}

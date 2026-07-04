@@ -1,0 +1,23 @@
+# dependencies
+node_modules/
+
+# build output
+dist/
+dist-ssr/
+
+# Rust / Tauri
+src-tauri/target/
+src-tauri/gen/
+
+# local SQLite / backups (never commit user trading data)
+*.db
+*.db-journal
+backups/
+
+# editor / OS
+.DS_Store
+.vscode/*
+!.vscode/extensions.json
+*.log
+.env
+.env.*

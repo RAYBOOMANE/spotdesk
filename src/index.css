@@ -1,0 +1,39 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* deep slate-blue terminal palette — carried over from the reference */
+  --void:#0a0e17; --panel:#121826; --panel2:#161d2e; --line:#212a3d; --line2:#2e3a52;
+  --ink:#eef2f8; --dim:#8090ab; --faint:#4a5670;
+  --live:#34d399; --free:#171f30; --gold:#fbbf5a; --deep:#f87186; --cool:#38bdf8;
+  --profit:#34d399; --loss:#f87186; --payout:#a78bfa;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background:
+    radial-gradient(1200px 600px at 80% -10%, rgba(45,212,167,0.04), transparent 60%),
+    radial-gradient(900px 500px at -10% 10%, rgba(90,169,245,0.03), transparent 55%),
+    var(--void);
+  color: var(--ink);
+  font-family: 'Space Grotesk', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  letter-spacing: -0.005em;
+}
+
+::selection { background: rgba(52,211,153,0.25); }
+
+/* scrollbars tuned to the terminal look */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb { background: var(--line2); border-radius: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+
+@keyframes pulse-bad { 0%,100%{opacity:1;} 50%{opacity:0.5;} }
+.save-bad { animation: pulse-bad 1.4s infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}

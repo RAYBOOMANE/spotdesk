@@ -1,0 +1,208 @@
+// Acceptance checks from the brief (§7). Run with: npm run test:logic
+import { strict as assert } from "node:assert";
+import { readFileSync } from "node:fs";
+import { LADDER, FWD, PHASE2_AVG } from "../src/lib/ladder";
+import {
+  freshState,
+  logOutcomeSingle,
+  setDaySingle,
+  rollDay,
+  cumInvest,
+  fwdEV,
+  selectionError,
+  normalizeImport,
+  multiOutcome,
+  deleteLog,
+  editHistoryDay,
+} from "../src/lib/logic";
+import { computeTopStats, equityPoints } from "../src/lib/stats";
+
+let pass = 0;
+function check(name: string, fn: () => void) {
+  fn();
+  pass++;
+  console.log("  ✓ " + name);
+}
+
+console.log("SPOTDESK acceptance checks\n");
+
+check("FWD table constants", () => {
+  assert.equal(FWD[1], 11.25);
+  assert.equal(FWD[2], 11.25);
+  assert.ok(Math.abs(FWD[3] - 23.2) < 1e-9);
+  assert.equal(FWD[4], 150);
+  assert.ok(Math.abs(PHASE2_AVG - 728.52) < 0.01);
+  assert.equal(FWD[8], PHASE2_AVG);
+  assert.equal(FWD[13], PHASE2_AVG);
+  assert.equal(FWD[14], 750);
+});
+
+check("Phase-aware cumulative investment", () => {
+  assert.equal(cumInvest(3), 95 + 190 + 388); // 673
+  assert.equal(cumInvest(9), 85);
+  assert.equal(cumInvest(11), 85 + 190 + 280); // 555
+  assert.equal(cumInvest(8), 95 + 190 + 388 + 1400 + 1450 + 1520 + 1600 + 0);
+});
+
+check("Blow $700 on D3 with default costs → net +$27", () => {
+  let st = freshState();
+  st = setDaySingle(st, "1-1", 3, null, null);
+  st = logOutcomeSingle(st, "1-1", 3, "blew", null, null, 700);
+  assert.equal(st.todayProfit, 27);
+  assert.deepEqual(st.spots["1-1"], { day: 0, cost: 0, extra: 0 });
+  assert.equal(st.todayLog[0].sunk, 673);
+});
+
+check("Blow $900 on D9 → net +$815 (phase-aware)", () => {
+  let st = freshState();
+  st = logOutcomeSingle(st, "2-1", 9, "blew", null, null, 900);
+  assert.equal(st.todayProfit, 815);
+});
+
+check("Payout $900 on D11 with $280 invested → +$620, account stays D11 at $0", () => {
+  let st = freshState();
+  st = setDaySingle(st, "3-1", 11, 280, null);
+  st = logOutcomeSingle(st, "3-1", 11, "payout", 280, null, 900);
+  assert.equal(st.todayPayouts, 620);
+  assert.deepEqual(st.spots["3-1"], { day: 11, cost: 0, extra: 0 });
+});
+
+check("New Day: traded D5 → D6 with extra folded into cost; untraded D3 stays D3", () => {
+  let st = freshState();
+  st = setDaySingle(st, "4-1", 5, 1450, 200); // extra > 0 → traded
+  st = setDaySingle(st, "5-1", 3, 388, null); // no extra → NOT traded
+  assert.ok(st.tradedToday.includes("4-1"));
+  assert.ok(!st.tradedToday.includes("5-1"));
+  st = rollDay(st, "2026-07-03T12:00:00.000Z");
+  assert.deepEqual(st.spots["4-1"], { day: 6, cost: 1650, extra: 0 }); // 1450+200, advanced
+  assert.deepEqual(st.spots["5-1"], { day: 3, cost: 388, extra: 0 }); // stayed
+  assert.equal(st.tradedToday.length, 0);
+  assert.equal(st.todayLog.length, 0);
+});
+
+check("Advance caps at D14", () => {
+  let st = freshState();
+  st = setDaySingle(st, "4-1", 14, 0, 50);
+  st = rollDay(st);
+  assert.equal(st.spots["4-1"].day, 14);
+});
+
+check("Setting a day without extra → NOT traded, Deployed Today unchanged", () => {
+  let st = freshState();
+  st = setDaySingle(st, "6-1", 4, 1400, null);
+  assert.equal(st.tradedToday.length, 0);
+  assert.equal(st.deployedToday, 0);
+  // fixing cost later still doesn't mark traded
+  st = setDaySingle(st, "6-1", 4, 1425, null);
+  assert.equal(st.tradedToday.length, 0);
+  // re-saving the SAME extra doesn't double count
+  st = setDaySingle(st, "6-1", 4, 1425, 100);
+  assert.equal(st.deployedToday, 100);
+  st = setDaySingle(st, "6-1", 4, 1425, 100);
+  assert.equal(st.deployedToday, 100);
+});
+
+check("Multi-select rejects mixing clusters / days / empty+occupied", () => {
+  let st = freshState();
+  st = setDaySingle(st, "1-1", 3, null, null);
+  st = setDaySingle(st, "1-2", 3, null, null);
+  st = setDaySingle(st, "1-3", 5, null, null);
+  st = setDaySingle(st, "2-1", 3, null, null);
+  assert.equal(selectionError(st, ["1-1"], "1-2"), null); // same cluster, same day OK
+  assert.ok(selectionError(st, ["1-1"], "2-1")); // different cluster
+  assert.ok(selectionError(st, ["1-1"], "1-3")); // different day
+  assert.ok(selectionError(st, ["1-1"], "1-4")); // empty + occupied
+  assert.equal(selectionError(st, ["1-4"], "1-5"), null); // both empty, same cluster
+});
+
+check("Total profit = blow profit + payout profit (gross payout excluded)", () => {
+  let st = freshState();
+  st = logOutcomeSingle(st, "1-1", 3, "blew", null, null, 700); // +27
+  st = logOutcomeSingle(st, "1-2", 11, "payout", 280, null, 900); // +620 payout profit, gross 900
+  st = rollDay(st, "2026-07-03T12:00:00.000Z");
+  const d = st.history[0];
+  assert.equal(d.profit, 27);
+  assert.equal(d.payouts, 620);
+  assert.equal(d.payoutGross, 900);
+  assert.equal(d.total, 647); // NOT 927
+});
+
+check("Forward EV per occupied account matches FWD; top stat sums them", () => {
+  let st = freshState();
+  st = setDaySingle(st, "1-1", 3, null, null);
+  st = setDaySingle(st, "1-2", 5, null, null);
+  st = setDaySingle(st, "1-3", 10, null, null);
+  const s = computeTopStats(st);
+  assert.ok(Math.abs(s.fwdTotal - (23.2 + 150 + PHASE2_AVG)) < 1e-9);
+  assert.equal(fwdEV(14), 750);
+  assert.equal(fwdEV(0), 0);
+});
+
+check("Traded-today marking: blow/payout mark, Set Day (no extra) doesn't", () => {
+  let st = freshState();
+  st = setDaySingle(st, "7-1", 2, 190, null);
+  st = setDaySingle(st, "7-2", 2, 190, null);
+  const s0 = computeTopStats(st);
+  assert.equal(s0.leftToTrade, 2);
+  st = logOutcomeSingle(st, "7-1", 2, "blew", null, null, 300);
+  const s1 = computeTopStats(st);
+  assert.equal(s1.blewCount, 1);
+  // blown spot is freed so it leaves the occupied pool; 7-2 still left to trade
+  assert.equal(s1.leftToTrade, 1);
+});
+
+check("Multi outcome uses flat day benchmark on blank cost (reference behavior)", () => {
+  let st = freshState();
+  st = multiOutcome(st, ["1-1", "1-2"], 3, "blew", null, null, 700);
+  // reference multi fallback = LADDER[3].inv = 388, NOT cumInvest(3)=673
+  assert.equal(st.todayLog[0].sunk, 388);
+  assert.equal(st.todayProfit, (700 - 388) * 2);
+});
+
+check("Delete log entry reverses today totals", () => {
+  let st = freshState();
+  st = logOutcomeSingle(st, "1-1", 3, "blew", null, null, 700);
+  st = logOutcomeSingle(st, "1-2", 11, "payout", 280, null, 900);
+  st = deleteLog(st, 0);
+  assert.equal(st.todayProfit, 0);
+  assert.equal(st.todayPayouts, 620);
+  st = deleteLog(st, 0);
+  assert.equal(st.todayPayouts, 0);
+});
+
+check("History day edit recomputes total = blows + payout profit", () => {
+  let st = freshState();
+  st = rollDay(st, "2026-07-01T12:00:00.000Z");
+  st = editHistoryDay(st, 0, { profit: 500, payouts: 120, payoutGross: 2000, deployed: 3000, blownOverride: 4 });
+  const d = st.history[0];
+  assert.equal(d.total, 620);
+  assert.equal(d.payoutGross, 2000);
+  assert.equal(d.blownOverride, 4);
+});
+
+check("Import spotdesk_day4_repaired.json → day 4, 28 live, 20 named clusters, colors, sheets", () => {
+  const raw = JSON.parse(readFileSync(new URL("./fixture_day4.json", import.meta.url), "utf8"));
+  const st = normalizeImport(raw);
+  assert.equal(st.dayCount, 4);
+  const live = Object.values(st.spots).filter((s) => s.day >= 1).length;
+  assert.equal(live, 28);
+  assert.equal(Object.keys(st.names).length, 20);
+  assert.equal(st.names["1"], "RAYAN LC");
+  assert.equal(st.colors["10"], "#4aa8ff");
+  assert.ok(st.sheets["1"].startsWith("https://docs.google.com/"));
+  assert.equal(st.capClusters, 20);
+  assert.equal(st.capAccts, 5);
+  const s = computeTopStats(st, new Date("2026-07-03T12:00:00Z"));
+  assert.equal(s.liveCount, 28); // grid is 20×5 so all 28 fall inside it
+  assert.equal(s.capDenom, 100);
+  // equity from the 3 archived days: 0 + 1581 + 2044.67
+  const eq = equityPoints(st);
+  assert.ok(Math.abs(eq.total - 3625.67) < 1e-9);
+  assert.equal(eq.points.length, 4);
+});
+
+check("Import rejects non-SPOTDESK files", () => {
+  assert.throws(() => normalizeImport({ foo: 1 }));
+});
+
+console.log(`\nAll ${pass} checks passed.`);
