@@ -10,47 +10,45 @@ export function PackagePerformanceChart() {
 
   return (
     <Card className="p-5">
-      <div className="mb-1.5 text-[0.56rem] font-medium uppercase tracking-[0.13em] text-dim">Package Performance</div>
-      <div className="mb-4 font-mono text-[0.6rem] text-faint">7-day net $ per package</div>
-      <div className="h-[168px] w-full">
-        {groups.length === 0 ? (
-          <div className="flex h-full items-center justify-center font-mono text-[0.66rem] text-faint">
-            No packages yet.
-          </div>
-        ) : (
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={groups} margin={{ top: 8, right: 8, bottom: 0, left: 8 }}>
-              <XAxis
-                dataKey="name"
-                tick={{ fontSize: 9, fill: "var(--faint)", fontFamily: "'JetBrains Mono', monospace" }}
-                axisLine={false}
-                tickLine={false}
-              />
-              <YAxis hide />
-              <Tooltip
-                contentStyle={{
-                  background: "var(--panel2)",
-                  border: "1px solid var(--line2)",
-                  borderRadius: 8,
-                  fontFamily: "'JetBrains Mono', monospace",
-                  fontSize: 11,
-                }}
-                labelStyle={{ color: "var(--dim)" }}
-                formatter={(v: number) => signed(Math.round(v))}
-              />
-              <Bar dataKey="week" radius={[3, 3, 0, 0]}>
-                {groups.map((g) => (
-                  <Cell key={g.hex} fill={g.week >= 0 ? "var(--profit)" : "var(--loss)"} />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        )}
+      <div className="mb-1.5 font-mono text-micro font-medium uppercase tracking-[0.14em] text-dim">
+        Package Performance
       </div>
-      {groups.length > 0 && (
+      <div className="mb-4 font-mono text-data-xs text-faint">7-day net $ per package</div>
+      <div className="h-[168px] w-full">
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={groups} margin={{ top: 8, right: 8, bottom: 0, left: 8 }}>
+            <XAxis
+              dataKey="name"
+              tick={{ fontSize: 9, fill: "var(--faint)", fontFamily: "'JetBrains Mono', monospace" }}
+              axisLine={false}
+              tickLine={false}
+            />
+            <YAxis hide />
+            <Tooltip
+              contentStyle={{
+                background: "var(--panel2)",
+                border: "1px solid var(--line2)",
+                borderRadius: 8,
+                fontFamily: "'JetBrains Mono', monospace",
+                fontSize: 11,
+              }}
+              labelStyle={{ color: "var(--dim)" }}
+              formatter={(v: number) => signed(Math.round(v))}
+            />
+            <Bar dataKey="week" radius={[3, 3, 0, 0]} isAnimationActive animationDuration={500} animationEasing="ease-out">
+              {groups.map((g) => (
+                <Cell key={g.hex} fill={g.week >= 0 ? "var(--profit)" : "var(--loss)"} />
+              ))}
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+      {groups.length === 0 ? (
+        <div className="mt-2 font-mono text-data-xs text-faint">No packages yet.</div>
+      ) : (
         <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1.5 border-t border-line pt-3">
           {groups.map((g) => (
-            <span key={g.hex} className="flex items-center gap-1.5 font-mono text-[0.56rem] text-dim">
+            <span key={g.hex} className="flex items-center gap-1.5 font-mono text-data-xs text-dim">
               <span className="h-[8px] w-[8px] shrink-0 rounded-[2px]" style={{ background: g.hex }} />
               {g.name}
             </span>

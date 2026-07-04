@@ -6,6 +6,7 @@ import { openExternal } from "@/lib/backup";
 import { cn } from "@/lib/utils";
 import { Card } from "@/components/ui/card";
 import { Panel } from "@/components/ui/panel";
+import { computeTopStats } from "@/lib/stats";
 
 export function ClusterGrid({
   phaseFilter,
@@ -22,6 +23,14 @@ export function ClusterGrid({
   const { state } = store;
   const dialogs = useDialogs();
   const { nClusters, nAccts } = gridDims(state);
+
+  // Capital-invested indicator: orange, intensity scaling with how close
+  // total deployed capital is to the trader's configured limit (0 = no
+  // limit set, dots stay the original neutral ink color — see index.css).
+  const hasCapitalLimit = state.capitalLimit > 0;
+  const investedOpacity = hasCapitalLimit
+    ? 0.35 + 0.65 * Math.min(1, computeTopStats(state).deployed / state.capitalLimit)
+    : 0;
 
   const renameCluster = async (c: number) => {
     const cur = state.names?.[c] ?? "C" + c;
@@ -84,7 +93,15 @@ export function ClusterGrid({
             title="select for multi-log"
           />
           <button className="flex flex-1 items-center gap-2 text-left" onClick={() => onOpenSpot(id)}>
-            <span className={cn("h-2 w-2 shrink-0 rounded-full transition-colors", occupied ? "bg-ink" : "bg-line")} />
+            <span
+              className={cn(
+                "h-2 w-2 shrink-0 rounded-full transition-colors",
+                !occupied && "bg-line",
+                occupied && !hasCapitalLimit && "bg-ink",
+                occupied && hasCapitalLimit && "bg-invested"
+              )}
+              style={occupied && hasCapitalLimit ? { opacity: investedOpacity } : undefined}
+            />
             <span className={cn("w-5 shrink-0 font-mono text-[0.62rem]", traded ? "font-bold text-ink" : "text-dim")}>
               {a}
             </span>

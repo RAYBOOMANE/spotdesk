@@ -55,6 +55,7 @@ export function freshState(): AppState {
     capClusters: null,
     capAccts: null,
     accountPrice: 95,
+    capitalLimit: 0,
     todayProfit: 0,
     todayPayouts: 0,
     todayLog: [],
@@ -360,6 +361,13 @@ export function clearCapacity(state: AppState): AppState {
   return st;
 }
 
+// Max capital the trader is willing to have deployed at once. 0 = no limit set.
+export function setCapitalLimit(state: AppState, limit: number): AppState {
+  const st = clone(state);
+  st.capitalLimit = Math.max(0, limit || 0);
+  return st;
+}
+
 // ── Import (reads spotdesk_*.json backups) ───────────────────────────
 export function normalizeImport(data: any): AppState {
   if (!data || typeof data !== "object" || !data.spots || !data.history)
@@ -375,6 +383,7 @@ export function normalizeImport(data: any): AppState {
   if (st.capClusters === undefined) st.capClusters = null;
   if (st.capAccts === undefined) st.capAccts = null;
   if (st.accountPrice == null) st.accountPrice = 95;
+  if (st.capitalLimit == null) st.capitalLimit = 0;
   if (st.todayProfit == null) st.todayProfit = 0;
   if (st.todayPayouts == null) st.todayPayouts = 0;
   if (!st.todayLog) st.todayLog = [];

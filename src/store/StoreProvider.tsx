@@ -22,6 +22,7 @@ interface Store {
   setSheet: (c: number, url: string) => void;
   saveCapacity: (cc: number, ca: number, names: Record<string, string>) => void;
   clearCapacity: () => void;
+  setCapitalLimit: (limit: number) => void;
   importState: (st: AppState) => void;
   resetAll: () => void;
 }
@@ -108,6 +109,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     setSheet: (c, url) => apply((s) => L.setSheet(s, c, url)),
     saveCapacity: (cc, ca, names) => apply((s) => L.saveCapacity(s, cc, ca, names)),
     clearCapacity: () => apply((s) => L.clearCapacity(s)),
+    setCapitalLimit: (limit) => apply((s) => L.setCapitalLimit(s, limit)),
     importState: (st) => setState(st),
     resetAll: () => setState(L.freshState()),
   };

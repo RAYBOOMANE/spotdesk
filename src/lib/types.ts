@@ -40,6 +40,7 @@ export interface AppState {
   capClusters: number | null;
   capAccts: number | null;
   accountPrice: number;
+  capitalLimit: number; // 0 = no limit set; max $ willing to have deployed at once
   todayProfit: number;
   todayPayouts: number;
   todayLog: LogEntry[];

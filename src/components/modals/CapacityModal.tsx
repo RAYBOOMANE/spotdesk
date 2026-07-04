@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useStore } from "@/store/StoreProvider";
 import { N_CLUSTERS, ACCTS_PER_CLUSTER } from "@/lib/ladder";
+import { computeTopStats } from "@/lib/stats";
 
 export function CapacityModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const store = useStore();
@@ -12,11 +13,13 @@ export function CapacityModal({ open, onClose }: { open: boolean; onClose: () =>
   const [cc, setCc] = useState(String(state.capClusters ?? N_CLUSTERS));
   const [ca, setCa] = useState(String(state.capAccts ?? ACCTS_PER_CLUSTER));
   const [names, setNames] = useState<Record<string, string>>({});
+  const [capitalLimit, setCapitalLimitStr] = useState(state.capitalLimit ? String(state.capitalLimit) : "");
 
   useEffect(() => {
     if (!open) return;
     setCc(String(state.capClusters ?? N_CLUSTERS));
     setCa(String(state.capAccts ?? ACCTS_PER_CLUSTER));
+    setCapitalLimitStr(state.capitalLimit ? String(state.capitalLimit) : "");
     const n: Record<string, string> = {};
     const count = state.capClusters && state.capClusters > 0 ? state.capClusters : N_CLUSTERS;
     for (let c = 1; c <= count; c++) n[c] = state.names?.[c] ?? "C" + c;
@@ -39,8 +42,11 @@ export function CapacityModal({ open, onClose }: { open: boolean; onClose: () =>
   const save = () => {
     const caN = Math.max(1, Math.min(20, parseInt(ca, 10) || ACCTS_PER_CLUSTER));
     store.saveCapacity(ccN, caN, names);
+    store.setCapitalLimit(parseFloat(capitalLimit) || 0);
     onClose();
   };
+
+  const s = computeTopStats(state);
   const clear = () => {
     store.clearCapacity();
     onClose();
@@ -64,6 +70,22 @@ export function CapacityModal({ open, onClose }: { open: boolean; onClose: () =>
             <Label>Accounts per cluster</Label>
             <Input inputMode="numeric" value={ca} onChange={(e) => setCa(e.target.value)} />
           </div>
+        </div>
+
+        <Label>Max capital willing to allocate ($)</Label>
+        <div className="mb-4">
+          <Input
+            inputMode="decimal"
+            value={capitalLimit}
+            placeholder="No limit set"
+            onChange={(e) => setCapitalLimitStr(e.target.value)}
+          />
+          {state.capitalLimit > 0 && (
+            <div className="mt-1.5 font-mono text-data-xs text-faint">
+              Currently ${s.deployed.toLocaleString()} deployed ({s.capitalPct.toFixed(0)}% of limit) — account
+              slots on the grid turn more intensely orange as you approach it.
+            </div>
+          )}
         </div>
 
         <Label>Cluster names</Label>

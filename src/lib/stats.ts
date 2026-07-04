@@ -18,6 +18,8 @@ export interface TopStats {
   capPct: number;
   capDenom: number;
   capLabel: string;
+  capitalLimit: number; // 0 = no limit set
+  capitalPct: number; // deployed ÷ capitalLimit × 100; 0 when unset
 }
 
 export function computeTopStats(state: AppState, now: Date = new Date()): TopStats {
@@ -61,6 +63,9 @@ export function computeTopStats(state: AppState, now: Date = new Date()): TopSta
       ? `${liveCount} / ${denom} (${state.capClusters}×${state.capAccts})`
       : `${liveCount} / ${denom} active`;
 
+  const capitalLimit = state.capitalLimit || 0;
+  const capitalPct = capitalLimit > 0 ? (deployed / capitalLimit) * 100 : 0;
+
   return {
     deployed,
     liveCount,
@@ -74,6 +79,8 @@ export function computeTopStats(state: AppState, now: Date = new Date()): TopSta
     capPct,
     capDenom: denom,
     capLabel,
+    capitalLimit,
+    capitalPct,
   };
 }
 

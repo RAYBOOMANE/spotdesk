@@ -4,9 +4,10 @@
 
 :root {
   /* ── SPOTDESK color tokens — single source of truth ──
-     Monochrome base (background / surfaces / borders / text) plus exactly
-     two accent colors, reserved for profit and loss. Nothing else in this
-     app may introduce a hue outside this file. */
+     Monochrome base (background / surfaces / borders / text) plus two accent
+     colors reserved for profit and loss, and one explicitly-approved
+     exception below. Nothing else in this app may introduce a hue outside
+     this file. */
   --void: #0a0a0a;   /* page background */
   --panel: #141414;  /* card / surface background */
   --panel2: #1f1f1f; /* elevated surface / hover background */
@@ -18,6 +19,12 @@
 
   --profit: #22c55e; /* the only green in the app */
   --loss: #ef4444;   /* the only red in the app (also used for destructive actions) */
+
+  /* Explicit, approved exception: capital currently invested/deployed, used
+     ONLY for account-slot status indicators. Its opacity is computed at
+     render time from proximity to the trader's configured capital limit
+     (see ClusterGrid) — this var is always applied at full strength. */
+  --invested: #f97316;
 }
 
 * { box-sizing: border-box; }
