@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useModals } from "@/hooks/useModals";
 import { useMultiSelect } from "@/hooks/useMultiSelect";
+import { useNowTrading } from "@/hooks/useNowTrading";
 import { AppShell } from "@/layouts/AppShell";
 import { HomeView } from "@/views/HomeView";
 import { OverviewView } from "@/views/OverviewView";
@@ -8,6 +9,7 @@ import { ClustersView } from "@/views/ClustersView";
 import { LogView } from "@/views/LogView";
 import { HistoryView } from "@/views/HistoryView";
 import { PlaceholderView } from "@/views/PlaceholderView";
+import { NowTradingView } from "@/views/NowTradingView";
 import { LogModal } from "@/components/modals/LogModal";
 import { MultiLogModal } from "@/components/modals/MultiLogModal";
 import { DayDetailModal } from "@/components/modals/DayDetailModal";
@@ -18,6 +20,7 @@ export default function App() {
   const [screen, setScreen] = useState<"home" | Department>("home");
   const [tab, setTab] = useState<string>("overview");
   const { multiSel, toggleSelect, clearSelection } = useMultiSelect();
+  const nowTrading = useNowTrading();
   const {
     logId,
     openLog,
@@ -64,9 +67,12 @@ export default function App() {
           />
         )}
         {department === "trading-floor" && tab === "now-trading" && (
-          <PlaceholderView
-            title="Now Trading"
-            description="Pick up to 10 clients/accounts you're actively trading for fast quick-logging across all of them."
+          <NowTradingView
+            onOpenSpot={openLog}
+            selected={nowTrading.selected}
+            onToggle={nowTrading.toggle}
+            onRemove={nowTrading.remove}
+            max={nowTrading.max}
           />
         )}
         {department === "trading-floor" && tab === "log" && <LogView />}
