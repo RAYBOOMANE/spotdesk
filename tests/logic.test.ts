@@ -36,6 +36,7 @@ import {
   updateWithdrawalMethod,
   removeWithdrawalMethod,
   todayTotals,
+  editTodayLogEntry,
 } from "../src/lib/logic";
 import {
   computeTopStats,
@@ -517,6 +518,44 @@ check("packageGroups/managerSummaries intentionally reflect raw log entries, not
   assert.equal(pkg.week, 27); // NOT 500 -- deliberately unaffected by the day-level override
   const mgr = managerSummaries(st).find((m) => m.hex === hex)!;
   assert.equal(mgr.allTimePL, 27); // same
+});
+
+check("editTodayLogEntry: reverses old net, applies edited entry, recomputes profit and today totals", () => {
+  let st = freshState();
+  st = setDaySingle(st, "3-1", 11, 280, null);
+  st = logOutcomeSingle(st, "3-1", 11, "payout", 280, null, 900); // net = 900-280 = +620
+  assert.equal(st.todayPayouts, 620);
+  // correct the entry: actual payout was 850, invested was really 300
+  st = editTodayLogEntry(st, 0, { amount: 850, invested: 300 });
+  const w = st.todayLog[0];
+  assert.equal(w.amount, 850);
+  assert.equal(w.invested, 300);
+  assert.equal(w.profit, 550); // 850-300
+  assert.equal(st.todayPayouts, 550); // NOT 620+550 -- old effect was fully removed first
+  assert.equal(st.todayProfit, 0);
+});
+
+check("editTodayLogEntry never touches state.spots -- account state stays whatever it currently is", () => {
+  let st = freshState();
+  st = logOutcomeSingle(st, "1-1", 3, "blew", null, null, 700); // blew -> spots["1-1"] freed (day:0)
+  st = setDaySingle(st, "1-1", 5, null, null); // re-deployed on a NEW day since then
+  const spotBefore = { ...st.spots["1-1"] };
+  st = editTodayLogEntry(st, 0, { amount: 900, invested: 673 });
+  assert.deepEqual(st.spots["1-1"], spotBefore); // completely unchanged by the edit
+});
+
+check("editTodayLogEntry: note/time patch, and blew-type entries edit `sunk` not `invested`", () => {
+  let st = freshState();
+  st = logOutcomeSingle(st, "2-1", 9, "blew", null, null, 900); // net = 900-85 = +815 (phase-aware)
+  assert.equal(st.todayProfit, 815);
+  st = editTodayLogEntry(st, 0, { amount: 950, invested: 100, note: "typo fix", time: "14:30" });
+  const w = st.todayLog[0];
+  assert.equal(w.sunk, 100);
+  assert.equal(w.invested, undefined); // blew entries use sunk, not invested
+  assert.equal(w.profit, 850); // 950-100
+  assert.equal(st.todayProfit, 850);
+  assert.equal(w.note, "typo fix");
+  assert.equal(w.time, "14:30");
 });
 
 console.log(`\nAll ${pass} checks passed.`);

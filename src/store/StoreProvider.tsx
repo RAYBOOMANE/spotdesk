@@ -27,6 +27,7 @@ interface Store {
   multiOutcome: (ids: string[], day: number, type: OutcomeType, cost: Maybe, extra: Maybe, amount: Maybe) => void;
   multiFree: (ids: string[]) => void;
   deleteLog: (idx: number) => void;
+  editTodayLogEntry: (idx: number, patch: L.EditLogEntryFields) => void;
   rollDay: () => Promise<void>;
   editHistoryDay: (idx: number, f: L.DayEditFields) => void;
   renameCluster: (c: number, name: string) => void;
@@ -129,6 +130,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       apply((s) => L.multiOutcome(s, ids, day, type, cost, extra, amount)),
     multiFree: (ids) => apply((s) => L.multiFree(s, ids)),
     deleteLog: (idx) => apply((s) => L.deleteLog(s, idx)),
+    editTodayLogEntry: (idx, patch) => apply((s) => L.editTodayLogEntry(s, idx, patch)),
     rollDay: async () => {
       // compute next synchronously so we can snapshot + auto-export it
       const next = L.rollDay(state);

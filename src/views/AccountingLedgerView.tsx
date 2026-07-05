@@ -1,21 +1,14 @@
 import { useMemo, useState } from "react";
 import { useStore } from "@/store/StoreProvider";
-import { useDialogs } from "@/components/ConfirmProvider";
 import { gridDims } from "@/lib/logic";
 import { ledgerRows, ledgerAuthoritativeTotals, managerSummaries, type LedgerRow } from "@/lib/stats";
 import { signed, cn } from "@/lib/utils";
 import { Card } from "@/components/ui/card";
 import { Table, THead, TBody, Th, Td } from "@/components/ui/table";
+import { EditSourceEntryModal } from "@/components/modals/EditSourceEntryModal";
 
-export function AccountingLedgerView({
-  onOpenSpot,
-  onOpenDay,
-}: {
-  onOpenSpot: (id: string) => void;
-  onOpenDay: (idx: number) => void;
-}) {
+export function AccountingLedgerView({ onOpenDay }: { onOpenDay: (idx: number) => void }) {
   const store = useStore();
-  const dialogs = useDialogs();
   const { state } = store;
   const { nClusters } = gridDims(state);
   const managers = managerSummaries(state);
@@ -26,6 +19,7 @@ export function AccountingLedgerView({
   const [clientFilter, setClientFilter] = useState("all");
   const [colorFilter, setColorFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState<"all" | "blew" | "payout">("all");
+  const [editEntryIdx, setEditEntryIdx] = useState<number | null>(null);
 
   const rows = allRows.filter((r) => {
     if (dateFrom && r.isoDate && r.isoDate < dateFrom) return false;
@@ -58,22 +52,14 @@ export function AccountingLedgerView({
   const selectClass =
     "w-full rounded-xl border border-line bg-panel2 px-3 py-2.5 font-mono text-[0.8rem] text-ink focus:border-line2 focus:outline-none";
 
-  // Read-only ledger: this never edits anything itself. It just jumps to the
-  // SAME modals used everywhere else in the app (LogModal for a live account,
-  // DayDetailModal for an archived day) -- the actual source, where edits
-  // belong. Historical rows get NO mutation here, only navigation.
+  // Read-only ledger: this never edits anything itself. Historical rows open
+  // the SAME DayDetailModal used by the History tab (edits happen there, not
+  // here). Today rows open a dedicated Edit Source Entry modal that only
+  // corrects the one entry it was opened for -- never the shared LogModal,
+  // which would let you log a whole new outcome or touch the live account.
   const openSource = (r: LedgerRow) => {
     if (r.historyIndex != null) onOpenDay(r.historyIndex);
-    else onOpenSpot(r.id);
-  };
-
-  const deleteEntry = async (r: LedgerRow) => {
-    if (r.todayLogIndex == null) return;
-    const ok = await dialogs.confirm(
-      `Delete this ${r.type} entry for ${r.id} (${signed(Math.round(r.net))})?\nToday's totals will be adjusted back before you re-log the correct one.`,
-      { confirmLabel: "Delete entry", danger: true }
-    );
-    if (ok) store.deleteLog(r.todayLogIndex);
+    else if (r.todayLogIndex != null) setEditEntryIdx(r.todayLogIndex);
   };
 
   return (
@@ -81,9 +67,9 @@ export function AccountingLedgerView({
       <div>
         <h1 className="text-lg font-semibold tracking-tight text-ink">Ledger</h1>
         <p className="text-sm text-dim">
-          Every logged entry, today and archived — read-only, built from existing trading data. "Open source" jumps
-          to the account (today) or the archived day it came from — edits happen there, not here. Today's rows can
-          also be deleted directly (removes its effect before you re-log the correct entry). Note: only outcomes
+          Every logged entry, today and archived — read-only, built from existing trading data. "Open source" opens a
+          dedicated edit sheet for today's rows (correct or delete just that entry, without logging a new outcome or
+          touching the live account) or the archived day it came from for history rows. Note: only outcomes
           (blows/payouts) are logged as ledger events; deploying capital (Set Day) isn't recorded as its own entry in
           the current data model.
         </p>
@@ -225,22 +211,12 @@ export function AccountingLedgerView({
                   </Td>
                   <Td className="text-data-xs text-faint">{r.sourceLabel}</Td>
                   <Td>
-                    <div className="flex justify-end gap-1.5">
-                      <button
-                        onClick={() => openSource(r)}
-                        className="rounded-lg border border-line bg-panel2 px-2.5 py-1 text-[0.62rem] font-bold text-dim transition-colors hover:border-line2 hover:text-ink"
-                      >
-                        Open source ↗
-                      </button>
-                      {r.todayLogIndex != null && (
-                        <button
-                          onClick={() => deleteEntry(r)}
-                          className="rounded-lg border border-loss/40 px-2.5 py-1 text-[0.62rem] font-bold text-loss transition-colors hover:bg-loss/10"
-                        >
-                          Delete
-                        </button>
-                      )}
-                    </div>
+                    <button
+                      onClick={() => openSource(r)}
+                      className="rounded-lg border border-line bg-panel2 px-2.5 py-1 text-[0.62rem] font-bold text-dim transition-colors hover:border-line2 hover:text-ink"
+                    >
+                      Open source ↗
+                    </button>
                   </Td>
                 </tr>
               ))
@@ -248,6 +224,8 @@ export function AccountingLedgerView({
           </TBody>
         </Table>
       </Card>
+
+      <EditSourceEntryModal todayLogIndex={editEntryIdx} onClose={() => setEditEntryIdx(null)} />
     </div>
   );
 }

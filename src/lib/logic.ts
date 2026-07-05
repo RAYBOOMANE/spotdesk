@@ -285,6 +285,47 @@ export function deleteLog(state: AppState, idx: number): AppState {
   return st;
 }
 
+// ── Edit an EXISTING today's-log entry in place (Accounting's Edit Source
+// Entry modal) ───────────────────────────────────────────────────────
+// Reverses this entry's old net effect, applies the patch, recomputes
+// profit, then re-applies the new net effect — the same reverse-then-apply
+// deleteLog already does, just without removing the row. Deliberately never
+// touches state.spots[id]: unlike logOutcomeSingle/setDaySingle, this can't
+// create, free, or re-trade an account — it only corrects the historical
+// record and the today totals derived from it.
+export interface EditLogEntryFields {
+  amount?: number; // gross received (payout amount, or a blow's trailing profit before blowing)
+  invested?: number; // capital deducted: sunk (blew) or invested (payout)
+  note?: string;
+  time?: string;
+}
+export function editTodayLogEntry(state: AppState, idx: number, patch: EditLogEntryFields): AppState {
+  const st = clone(state);
+  const w = st.todayLog[idx];
+  if (!w) return st;
+
+  const oldNet = netOfLog(w);
+  if (w.type === "payout") st.todayPayouts -= oldNet;
+  else st.todayProfit -= oldNet;
+
+  if (patch.amount != null && !isNaN(patch.amount)) w.amount = patch.amount;
+  if (patch.invested != null && !isNaN(patch.invested)) {
+    if (w.type === "blew") w.sunk = patch.invested;
+    else w.invested = patch.invested;
+  }
+  if (patch.note !== undefined) w.note = patch.note;
+  if (patch.time !== undefined && patch.time.trim()) w.time = patch.time;
+
+  const investedNow = w.type === "blew" ? w.sunk || 0 : w.invested || 0;
+  w.profit = w.amount - investedNow;
+
+  const newNet = netOfLog(w);
+  if (w.type === "payout") st.todayPayouts += newNet;
+  else st.todayProfit += newNet;
+
+  return st;
+}
+
 // ── Total money currently deployed (grid-scoped, with benchmark fallback
 //    when cost+extra is 0 — exactly like the reference render loop) ────
 export function deployedNow(state: AppState): number {

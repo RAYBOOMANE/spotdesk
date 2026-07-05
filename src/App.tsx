@@ -89,7 +89,7 @@ export default function App() {
         {department === "ceo-office" && tab === "managers" && <ManagersView />}
         {department === "ceo-office" && tab === "money-held" && <MoneyHeldView />}
         {department === "ceo-office" && tab === "objectives" && <ObjectivesView />}
-        {department === "accounting" && <AccountingLedgerView onOpenSpot={openLog} onOpenDay={openDay} />}
+        {department === "accounting" && <AccountingLedgerView onOpenDay={openDay} />}
         {department === "secretary" && (
           <PlaceholderView title="Secretary" description="To-do lists and operational follow-ups." />
         )}

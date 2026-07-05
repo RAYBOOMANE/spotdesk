@@ -17,6 +17,7 @@ export interface LogEntry {
   profit?: number; // net (may be absent in very old backups → fall back to amount)
   day: number;
   type: OutcomeType;
+  note?: string; // optional correction reason, set via Accounting's Edit Source Entry
 }
 
 export interface HistoryDay {
