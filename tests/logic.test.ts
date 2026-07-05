@@ -37,6 +37,16 @@ import {
   removeWithdrawalMethod,
   todayTotals,
   editTodayLogEntry,
+  addTask,
+  updateTask,
+  deleteTask,
+  addStep,
+  updateStep,
+  toggleStep,
+  deleteStep,
+  setTaskProgressManual,
+  resetTaskProgressToAuto,
+  taskProgress,
 } from "../src/lib/logic";
 import {
   computeTopStats,
@@ -556,6 +566,128 @@ check("editTodayLogEntry: note/time patch, and blew-type entries edit `sunk` not
   assert.equal(st.todayProfit, 850);
   assert.equal(w.note, "typo fix");
   assert.equal(w.time, "14:30");
+});
+
+check("addTask creates a not_started, 0% task in auto mode", () => {
+  let st = freshState();
+  st = addTask(st, { title: "Buy 4 phones" });
+  assert.equal(st.tasks.length, 1);
+  const t = st.tasks[0];
+  assert.equal(t.title, "Buy 4 phones");
+  assert.equal(t.status, "not_started");
+  assert.equal(t.progressPercent, 0);
+  assert.equal(t.progressMode, "auto");
+  assert.deepEqual(t.steps, []);
+});
+
+check("taskProgress from boolean steps: 2/4 completed -> 50%, matching the stored auto progressPercent", () => {
+  let st = freshState();
+  st = addTask(st, { title: "Ship release" });
+  const id = st.tasks[0].id;
+  st = addStep(st, id, { title: "step 1", completed: false });
+  st = addStep(st, id, { title: "step 2", completed: false });
+  st = addStep(st, id, { title: "step 3", completed: false });
+  st = addStep(st, id, { title: "step 4", completed: false });
+  const stepIds = st.tasks[0].steps.map((s) => s.id);
+  st = toggleStep(st, id, stepIds[0]);
+  st = toggleStep(st, id, stepIds[1]);
+  assert.equal(taskProgress(st.tasks[0]), 50);
+  assert.equal(st.tasks[0].progressPercent, 50); // auto mode rewrites it on every step mutation
+  assert.equal(st.tasks[0].status, "in_progress");
+});
+
+check("taskProgress from a quantity step: bought 2/4 phones -> 50% (the brief's example)", () => {
+  let st = freshState();
+  st = addTask(st, { title: "Buy 4 phones" });
+  const id = st.tasks[0].id;
+  st = addStep(st, id, { title: "phones", completed: false, qtyTarget: 4, qtyDone: 0 });
+  const stepId = st.tasks[0].steps[0].id;
+  st = updateStep(st, id, stepId, { qtyDone: 2 });
+  assert.equal(taskProgress(st.tasks[0]), 50);
+  assert.equal(st.tasks[0].progressPercent, 50);
+});
+
+check("Completing the last step syncs status to completed at 100%; unchecking reverts it", () => {
+  let st = freshState();
+  st = addTask(st, { title: "Two-step task" });
+  const id = st.tasks[0].id;
+  st = addStep(st, id, { title: "a", completed: false });
+  st = addStep(st, id, { title: "b", completed: false });
+  const [a, b] = st.tasks[0].steps.map((s) => s.id);
+  st = toggleStep(st, id, a);
+  assert.equal(st.tasks[0].status, "in_progress");
+  st = toggleStep(st, id, b);
+  assert.equal(st.tasks[0].progressPercent, 100);
+  assert.equal(st.tasks[0].status, "completed");
+  assert.ok(st.tasks[0].completedAt);
+  st = toggleStep(st, id, b); // uncheck -> back below 100%
+  assert.equal(st.tasks[0].progressPercent, 50);
+  assert.equal(st.tasks[0].status, "in_progress");
+  assert.equal(st.tasks[0].completedAt, undefined);
+});
+
+check("setTaskProgressManual pins progress and switches mode; resetTaskProgressToAuto recomputes from steps", () => {
+  let st = freshState();
+  st = addTask(st, { title: "Pinned project" });
+  const id = st.tasks[0].id;
+  st = addStep(st, id, { title: "a", completed: true });
+  st = addStep(st, id, { title: "b", completed: false });
+  assert.equal(st.tasks[0].progressPercent, 50); // auto: 1/2 steps
+
+  st = setTaskProgressManual(st, id, 90);
+  assert.equal(st.tasks[0].progressPercent, 90);
+  assert.equal(st.tasks[0].progressMode, "manual");
+  // steps still editable, but no longer drive the number while pinned
+  st = toggleStep(st, id, st.tasks[0].steps[1].id);
+  assert.equal(st.tasks[0].progressPercent, 90);
+
+  st = resetTaskProgressToAuto(st, id);
+  assert.equal(st.tasks[0].progressMode, "auto");
+  assert.equal(st.tasks[0].progressPercent, 100); // both steps now complete
+  assert.equal(st.tasks[0].status, "completed");
+});
+
+check("deleteStep and deleteTask remove records and recompute; simple no-step task uses progressPercent directly", () => {
+  let st = freshState();
+  st = addTask(st, { title: "Simple task" });
+  const id = st.tasks[0].id;
+  st = setTaskProgressManual(st, id, 40);
+  assert.equal(taskProgress(st.tasks[0]), 40); // no steps -> progressPercent IS the source of truth
+
+  st = addTask(st, { title: "To delete" });
+  assert.equal(st.tasks.length, 2);
+  const deadId = st.tasks[1].id;
+  st = deleteTask(st, deadId);
+  assert.equal(st.tasks.length, 1);
+
+  st = addStep(st, id, { title: "x", completed: false });
+  st = addStep(st, id, { title: "y", completed: true });
+  st = deleteStep(st, id, st.tasks[0].steps[0].id);
+  assert.equal(st.tasks[0].steps.length, 1);
+});
+
+check("updateTask patches fields and marking completed directly (ahead of steps) pins progress to 100", () => {
+  let st = freshState();
+  st = addTask(st, { title: "Task", urgency: "low", importance: "low" });
+  const id = st.tasks[0].id;
+  st = updateTask(st, id, { urgency: "high", importance: "high", deadline: "2026-08-01" });
+  assert.equal(st.tasks[0].urgency, "high");
+  assert.equal(st.tasks[0].importance, "high");
+  assert.equal(st.tasks[0].deadline, "2026-08-01");
+
+  st = addStep(st, id, { title: "a", completed: false });
+  st = addStep(st, id, { title: "b", completed: false });
+  st = updateTask(st, id, { status: "completed" }); // manual override ahead of steps
+  assert.equal(st.tasks[0].progressPercent, 100);
+  assert.equal(st.tasks[0].progressMode, "manual");
+  assert.equal(st.tasks[0].status, "completed");
+});
+
+check("Import backfills missing tasks for older backups", () => {
+  const raw = JSON.parse(readFileSync(new URL("./fixture_day4.json", import.meta.url), "utf8"));
+  assert.ok(!("tasks" in raw)); // confirms this fixture predates the field
+  const st = normalizeImport(raw);
+  assert.deepEqual(st.tasks, []);
 });
 
 console.log(`\nAll ${pass} checks passed.`);

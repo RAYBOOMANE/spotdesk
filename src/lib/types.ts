@@ -138,6 +138,36 @@ export interface ClientProfile {
   appLogins: AppLogin[];
 }
 
+// ── Secretary tasks ───────────────────────────────────────────────────
+export type TaskStatus = "not_started" | "in_progress" | "completed";
+export type TaskLevel = "low" | "medium" | "high";
+
+export interface TaskStep {
+  id: string;
+  title: string;
+  completed: boolean;
+  qtyTarget?: number; // e.g. 4 phones
+  qtyDone?: number; // e.g. 2 phones — omit both for a plain boolean step
+}
+
+export interface Task {
+  id: string;
+  title: string;
+  notes: string;
+  status: TaskStatus;
+  urgency: TaskLevel;
+  importance: TaskLevel;
+  deadline?: string; // ISO date, optional
+  createdAt: string; // ISO
+  completedAt?: string; // ISO
+  steps: TaskStep[];
+  // "auto" (default once steps exist) = progressPercent is DERIVED from steps
+  // and rewritten by every step mutation; "manual" = pinned, steps become a
+  // plain checklist that no longer drives the number until reset to auto.
+  progressMode: "auto" | "manual";
+  progressPercent: number; // 0-100
+}
+
 export interface AppState {
   spots: Record<string, Spot>;
   names: Record<string, string>;
@@ -159,6 +189,7 @@ export interface AppState {
   managers: Record<string, ManagerMeta>; // key = color hex
   moneyHeld: MoneyHeldEntry[];
   clientProfiles: Record<string, ClientProfile>; // key = cluster number
+  tasks: Task[];
 }
 
 // null = field left blank → use the same fallback the original app used

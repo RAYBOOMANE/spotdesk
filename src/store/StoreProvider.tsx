@@ -9,6 +9,8 @@ import type {
   OutcomeType,
   PaymentMethod,
   Settlement,
+  Task,
+  TaskStep,
   VpsInfo,
   WithdrawalMethod,
 } from "@/lib/types";
@@ -58,6 +60,18 @@ interface Store {
   updateWithdrawalMethod: (cluster: number, id: string, patch: Partial<WithdrawalMethod>) => void;
   removeWithdrawalMethod: (cluster: number, id: string) => void;
   addSettlement: (entryId: string, settlement: Omit<Settlement, "id">) => void;
+  addTask: (fields: { title: string; notes?: string; urgency?: Task["urgency"]; importance?: Task["importance"]; deadline?: string }) => void;
+  updateTask: (
+    id: string,
+    patch: Partial<Pick<Task, "title" | "notes" | "status" | "urgency" | "importance" | "deadline">>
+  ) => void;
+  deleteTask: (id: string) => void;
+  setTaskProgressManual: (id: string, pct: number) => void;
+  resetTaskProgressToAuto: (id: string) => void;
+  addStep: (taskId: string, step: Omit<TaskStep, "id">) => void;
+  updateStep: (taskId: string, stepId: string, patch: Partial<Omit<TaskStep, "id">>) => void;
+  toggleStep: (taskId: string, stepId: string) => void;
+  deleteStep: (taskId: string, stepId: string) => void;
   importState: (st: AppState) => void;
   resetAll: () => void;
 }
@@ -164,6 +178,15 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     updateWithdrawalMethod: (cluster, id, patch) => apply((s) => L.updateWithdrawalMethod(s, cluster, id, patch)),
     removeWithdrawalMethod: (cluster, id) => apply((s) => L.removeWithdrawalMethod(s, cluster, id)),
     addSettlement: (entryId, settlement) => apply((s) => L.addSettlement(s, entryId, settlement)),
+    addTask: (fields) => apply((s) => L.addTask(s, fields)),
+    updateTask: (id, patch) => apply((s) => L.updateTask(s, id, patch)),
+    deleteTask: (id) => apply((s) => L.deleteTask(s, id)),
+    setTaskProgressManual: (id, pct) => apply((s) => L.setTaskProgressManual(s, id, pct)),
+    resetTaskProgressToAuto: (id) => apply((s) => L.resetTaskProgressToAuto(s, id)),
+    addStep: (taskId, step) => apply((s) => L.addStep(s, taskId, step)),
+    updateStep: (taskId, stepId, patch) => apply((s) => L.updateStep(s, taskId, stepId, patch)),
+    toggleStep: (taskId, stepId) => apply((s) => L.toggleStep(s, taskId, stepId)),
+    deleteStep: (taskId, stepId) => apply((s) => L.deleteStep(s, taskId, stepId)),
     importState: (st) => setState(st),
     resetAll: () => setState(L.freshState()),
   };

@@ -8,7 +8,6 @@ import { OverviewView } from "@/views/OverviewView";
 import { ClustersView } from "@/views/ClustersView";
 import { LogView } from "@/views/LogView";
 import { HistoryView } from "@/views/HistoryView";
-import { PlaceholderView } from "@/views/PlaceholderView";
 import { NowTradingView } from "@/views/NowTradingView";
 import { ObjectivesView } from "@/views/ObjectivesView";
 import { CeoOverviewView } from "@/views/CeoOverviewView";
@@ -16,6 +15,7 @@ import { CeoClientsView } from "@/views/CeoClientsView";
 import { ManagersView } from "@/views/ManagersView";
 import { MoneyHeldView } from "@/views/MoneyHeldView";
 import { AccountingLedgerView } from "@/views/AccountingLedgerView";
+import { TaskListView } from "@/views/TaskListView";
 import { LogModal } from "@/components/modals/LogModal";
 import { MultiLogModal } from "@/components/modals/MultiLogModal";
 import { DayDetailModal } from "@/components/modals/DayDetailModal";
@@ -90,9 +90,12 @@ export default function App() {
         {department === "ceo-office" && tab === "money-held" && <MoneyHeldView />}
         {department === "ceo-office" && tab === "objectives" && <ObjectivesView />}
         {department === "accounting" && <AccountingLedgerView onOpenDay={openDay} />}
-        {department === "secretary" && (
-          <PlaceholderView title="Secretary" description="To-do lists and operational follow-ups." />
-        )}
+
+        {department === "secretary" && tab === "today" && <TaskListView filter="today" />}
+        {department === "secretary" && tab === "upcoming" && <TaskListView filter="upcoming" />}
+        {department === "secretary" && tab === "all" && <TaskListView filter="all" />}
+        {department === "secretary" && tab === "projects" && <TaskListView filter="projects" />}
+        {department === "secretary" && tab === "completed" && <TaskListView filter="completed" />}
       </AppShell>
 
       <LogModal id={logId} onClose={closeLog} />

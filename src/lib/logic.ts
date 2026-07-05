@@ -24,6 +24,9 @@ import type {
   PaymentMethod,
   Settlement,
   Spot,
+  Task,
+  TaskLevel,
+  TaskStep,
   VpsInfo,
   WithdrawalMethod,
 } from "./types";
@@ -108,6 +111,7 @@ export function freshState(): AppState {
     managers: {},
     moneyHeld: [],
     clientProfiles: {},
+    tasks: [],
   };
 }
 
@@ -646,6 +650,156 @@ export function removeWithdrawalMethod(state: AppState, cluster: number, id: str
   return st;
 }
 
+// ── Secretary → Tasks ────────────────────────────────────────────────
+// Progress is DERIVED from steps whenever progressMode === "auto" (the
+// default the moment a task gets its first step): every step mutation below
+// recomputes and rewrites progressPercent in the SAME pure function, so
+// there's no separate cached counter that can silently drift the way
+// todayProfit once did before the Accounting fix. progressMode === "manual"
+// is an explicit pin -- steps stay editable as a plain checklist but stop
+// driving the number until resetTaskProgressToAuto recomputes and unpins it.
+export function taskProgress(task: Task): number {
+  if (task.steps.length === 0) return task.progressPercent;
+  const frac =
+    task.steps.reduce((sum, s) => {
+      if (s.qtyTarget != null && s.qtyTarget > 0) return sum + Math.min((s.qtyDone || 0) / s.qtyTarget, 1);
+      return sum + (s.completed ? 1 : 0);
+    }, 0) / task.steps.length;
+  return Math.round(frac * 100);
+}
+
+function syncTaskStatus(t: Task): Task {
+  if (t.progressPercent >= 100) {
+    if (t.status !== "completed") return { ...t, status: "completed", completedAt: new Date().toISOString() };
+    return t;
+  }
+  if (t.status === "completed") return { ...t, status: "in_progress", completedAt: undefined };
+  if (t.progressPercent > 0 && t.status === "not_started") return { ...t, status: "in_progress" };
+  return t;
+}
+
+function recomputeAuto(t: Task): Task {
+  if (t.progressMode !== "auto" || t.steps.length === 0) return t;
+  return syncTaskStatus({ ...t, progressPercent: taskProgress(t) });
+}
+
+export function addTask(
+  state: AppState,
+  fields: { title: string; notes?: string; urgency?: TaskLevel; importance?: TaskLevel; deadline?: string },
+  id?: string
+): AppState {
+  const st = clone(state);
+  if (!st.tasks) st.tasks = [];
+  st.tasks.push({
+    id: id ?? genId(),
+    title: fields.title,
+    notes: fields.notes || "",
+    status: "not_started",
+    urgency: fields.urgency || "medium",
+    importance: fields.importance || "medium",
+    deadline: fields.deadline || undefined,
+    createdAt: new Date().toISOString(),
+    steps: [],
+    progressMode: "auto",
+    progressPercent: 0,
+  });
+  return st;
+}
+
+export function updateTask(
+  state: AppState,
+  id: string,
+  patch: Partial<Pick<Task, "title" | "notes" | "status" | "urgency" | "importance" | "deadline">>
+): AppState {
+  const st = clone(state);
+  const idx = st.tasks.findIndex((t) => t.id === id);
+  if (idx < 0) return st;
+  let t: Task = { ...st.tasks[idx], ...patch };
+  // A direct manual status edit to "completed" ahead of 100% pins progress
+  // (this IS an override); leaving "completed" just clears the timestamp.
+  if (patch.status === "completed" && t.progressPercent < 100) {
+    t = { ...t, progressPercent: 100, progressMode: t.steps.length > 0 ? "manual" : t.progressMode, completedAt: new Date().toISOString() };
+  } else if (patch.status && patch.status !== "completed" && st.tasks[idx].status === "completed") {
+    t = { ...t, completedAt: undefined };
+  }
+  st.tasks[idx] = t;
+  return st;
+}
+
+export function deleteTask(state: AppState, id: string): AppState {
+  const st = clone(state);
+  st.tasks = st.tasks.filter((t) => t.id !== id);
+  return st;
+}
+
+export function setTaskProgressManual(state: AppState, id: string, pct: number): AppState {
+  const st = clone(state);
+  const idx = st.tasks.findIndex((t) => t.id === id);
+  if (idx < 0) return st;
+  const clamped = Math.max(0, Math.min(100, Math.round(pct)));
+  st.tasks[idx] = syncTaskStatus({ ...st.tasks[idx], progressPercent: clamped, progressMode: "manual" });
+  return st;
+}
+
+export function resetTaskProgressToAuto(state: AppState, id: string): AppState {
+  const st = clone(state);
+  const idx = st.tasks.findIndex((t) => t.id === id);
+  if (idx < 0) return st;
+  st.tasks[idx] = recomputeAuto({ ...st.tasks[idx], progressMode: "auto" });
+  return st;
+}
+
+export function addStep(state: AppState, taskId: string, step: Omit<TaskStep, "id">, id?: string): AppState {
+  const st = clone(state);
+  const idx = st.tasks.findIndex((t) => t.id === taskId);
+  if (idx < 0) return st;
+  const t: Task = { ...st.tasks[idx], steps: [...st.tasks[idx].steps, { ...step, id: id ?? genId() }] };
+  st.tasks[idx] = recomputeAuto(t);
+  return st;
+}
+
+export function updateStep(
+  state: AppState,
+  taskId: string,
+  stepId: string,
+  patch: Partial<Omit<TaskStep, "id">>
+): AppState {
+  const st = clone(state);
+  const idx = st.tasks.findIndex((t) => t.id === taskId);
+  if (idx < 0) return st;
+  const sIdx = st.tasks[idx].steps.findIndex((s) => s.id === stepId);
+  if (sIdx < 0) return st;
+  const steps = [...st.tasks[idx].steps];
+  steps[sIdx] = { ...steps[sIdx], ...patch };
+  st.tasks[idx] = recomputeAuto({ ...st.tasks[idx], steps });
+  return st;
+}
+
+export function toggleStep(state: AppState, taskId: string, stepId: string): AppState {
+  const st = clone(state);
+  const idx = st.tasks.findIndex((t) => t.id === taskId);
+  if (idx < 0) return st;
+  const sIdx = st.tasks[idx].steps.findIndex((s) => s.id === stepId);
+  if (sIdx < 0) return st;
+  const steps = [...st.tasks[idx].steps];
+  const s = steps[sIdx];
+  steps[sIdx] =
+    s.qtyTarget != null && s.qtyTarget > 0
+      ? { ...s, qtyDone: (s.qtyDone || 0) >= s.qtyTarget ? 0 : s.qtyTarget, completed: !((s.qtyDone || 0) >= s.qtyTarget) }
+      : { ...s, completed: !s.completed };
+  st.tasks[idx] = recomputeAuto({ ...st.tasks[idx], steps });
+  return st;
+}
+
+export function deleteStep(state: AppState, taskId: string, stepId: string): AppState {
+  const st = clone(state);
+  const idx = st.tasks.findIndex((t) => t.id === taskId);
+  if (idx < 0) return st;
+  const steps = st.tasks[idx].steps.filter((s) => s.id !== stepId);
+  st.tasks[idx] = recomputeAuto({ ...st.tasks[idx], steps });
+  return st;
+}
+
 // ── Import (reads spotdesk_*.json backups) ───────────────────────────
 export function normalizeImport(data: any): AppState {
   if (!data || typeof data !== "object" || !data.spots || !data.history)
@@ -669,6 +823,7 @@ export function normalizeImport(data: any): AppState {
   if (!st.objectives) st.objectives = defaultObjectives();
   if (!st.managers) st.managers = {};
   if (!st.clientProfiles) st.clientProfiles = {};
+  if (!st.tasks) st.tasks = [];
 
   // Client profiles: migrate the old free-text vpsInfo string into the
   // structured object (no data to preserve — the field held nothing before

@@ -2,12 +2,17 @@ import type { ComponentType } from "react";
 import {
   Briefcase,
   Calculator,
+  CalendarClock,
+  CalendarDays,
+  CheckCircle2,
   ClipboardList,
+  FolderKanban,
   History,
   Landmark,
   LayoutDashboard,
   LayoutGrid,
   LineChart,
+  ListTodo,
   ScrollText,
   Target,
   UserCog,
@@ -54,7 +59,13 @@ export const DEPARTMENT_TABS: Record<Department, TabMeta[]> = {
     { key: "objectives", label: "Objectives", icon: Target },
   ],
   accounting: [{ key: "overview", label: "Overview", icon: LayoutDashboard }],
-  secretary: [{ key: "overview", label: "Overview", icon: LayoutDashboard }],
+  secretary: [
+    { key: "today", label: "Today", icon: CalendarClock },
+    { key: "upcoming", label: "Upcoming", icon: CalendarDays },
+    { key: "all", label: "All Tasks", icon: ListTodo },
+    { key: "projects", label: "Projects", icon: FolderKanban },
+    { key: "completed", label: "Completed", icon: CheckCircle2 },
+  ],
 };
 
 export function defaultTab(dept: Department): string {
