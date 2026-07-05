@@ -10,7 +10,7 @@
 // ─────────────────────────────────────────────────────────────────────
 
 import { LADDER, FWD, N_CLUSTERS, ACCTS_PER_CLUSTER, PACKAGE_COLORS } from "./ladder";
-import type { AppState, HistoryDay, LogEntry, Maybe, OutcomeType, Spot } from "./types";
+import type { AppState, HistoryDay, LogEntry, Maybe, Objectives, OutcomeType, Spot } from "./types";
 
 export function fwdEV(day: number): number {
   if (day < 1 || day > 14) return 0;
@@ -33,6 +33,10 @@ export function gridDims(state: AppState): { nClusters: number; nAccts: number }
     nClusters: state.capClusters && state.capClusters > 0 ? state.capClusters : N_CLUSTERS,
     nAccts: state.capAccts && state.capAccts > 0 ? state.capAccts : ACCTS_PER_CLUSTER,
   };
+}
+
+function defaultObjectives(): Objectives {
+  return { dailyTarget: 0, weeklyTarget: 0, monthlyTarget: 0, maxAccounts: 0, notes: "" };
 }
 
 export function freshState(): AppState {
@@ -63,6 +67,7 @@ export function freshState(): AppState {
     deployedToday: 0,
     dayCount: 1,
     history: [],
+    objectives: defaultObjectives(),
   };
 }
 
@@ -368,6 +373,14 @@ export function setCapitalLimit(state: AppState, limit: number): AppState {
   return st;
 }
 
+// CEO Office → Objectives. Merges a partial patch into the existing
+// objectives; untouched fields keep their current value.
+export function setObjectives(state: AppState, patch: Partial<Objectives>): AppState {
+  const st = clone(state);
+  st.objectives = { ...(st.objectives || defaultObjectives()), ...patch };
+  return st;
+}
+
 // ── Import (reads spotdesk_*.json backups) ───────────────────────────
 export function normalizeImport(data: any): AppState {
   if (!data || typeof data !== "object" || !data.spots || !data.history)
@@ -388,6 +401,7 @@ export function normalizeImport(data: any): AppState {
   if (st.todayPayouts == null) st.todayPayouts = 0;
   if (!st.todayLog) st.todayLog = [];
   if (st.dayCount == null) st.dayCount = 1;
+  if (!st.objectives) st.objectives = defaultObjectives();
   return st;
 }
 

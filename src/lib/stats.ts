@@ -110,6 +110,27 @@ export function zoneCounts(state: AppState): Record<Zone, number> {
   return counts;
 }
 
+// Today/week/month/all-time P&L, used by Objectives and CEO Office Overview.
+// Week = last 7 archived days + today (matches packageGroups' "week" window).
+// Month = archived days since the 1st of the current calendar month + today
+// (matches computeTopStats' monthPayouts window, just on .total not .payouts).
+export interface PeriodTotals {
+  today: number;
+  week: number;
+  month: number;
+  allTime: number;
+}
+export function periodTotals(state: AppState, now: Date = new Date()): PeriodTotals {
+  const today = state.todayProfit + state.todayPayouts;
+  const week = state.history.slice(-7).reduce((sum, d) => sum + (d.total || 0), 0) + today;
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const month =
+    state.history.filter((d) => d.date && new Date(d.date) >= monthStart).reduce((sum, d) => sum + (d.total || 0), 0) +
+    today;
+  const allTime = state.history.reduce((sum, d) => sum + (d.total || 0), 0) + today;
+  return { today, week, month, allTime };
+}
+
 // Equity curve: cumulative running total of each archived day's banked total.
 export interface EquityPoint {
   day: number;

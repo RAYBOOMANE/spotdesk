@@ -14,8 +14,9 @@ import {
   multiOutcome,
   deleteLog,
   editHistoryDay,
+  setObjectives,
 } from "../src/lib/logic";
-import { computeTopStats, equityPoints } from "../src/lib/stats";
+import { computeTopStats, equityPoints, periodTotals } from "../src/lib/stats";
 
 let pass = 0;
 function check(name: string, fn: () => void) {
@@ -180,6 +181,31 @@ check("History day edit recomputes total = blows + payout profit", () => {
   assert.equal(d.blownOverride, 4);
 });
 
+check("setObjectives merges a partial patch, leaves other fields untouched", () => {
+  let st = freshState();
+  st = setObjectives(st, { dailyTarget: 200, notes: "push hard" });
+  assert.equal(st.objectives.dailyTarget, 200);
+  assert.equal(st.objectives.notes, "push hard");
+  assert.equal(st.objectives.weeklyTarget, 0); // untouched default
+  st = setObjectives(st, { weeklyTarget: 1000 });
+  assert.equal(st.objectives.dailyTarget, 200); // survives a second, unrelated patch
+  assert.equal(st.objectives.weeklyTarget, 1000);
+  assert.equal(st.dayCount, 1); // unrelated state untouched
+  assert.equal(st.capitalLimit, 0);
+});
+
+check("periodTotals: today/week/month/allTime sum archived + live totals", () => {
+  let st = freshState();
+  st = logOutcomeSingle(st, "1-1", 3, "blew", null, null, 700); // +27 today
+  st = rollDay(st, "2026-07-01T12:00:00.000Z"); // archives day1 total=27, today resets
+  st = logOutcomeSingle(st, "1-2", 11, "payout", 280, null, 900); // +620 live today
+  const p = periodTotals(st, new Date("2026-07-03T12:00:00Z"));
+  assert.equal(p.today, 620);
+  assert.equal(p.week, 27 + 620);
+  assert.equal(p.month, 27 + 620);
+  assert.equal(p.allTime, 27 + 620);
+});
+
 check("Import spotdesk_day4_repaired.json → day 4, 28 live, 20 named clusters, colors, sheets", () => {
   const raw = JSON.parse(readFileSync(new URL("./fixture_day4.json", import.meta.url), "utf8"));
   const st = normalizeImport(raw);
@@ -203,6 +229,13 @@ check("Import spotdesk_day4_repaired.json → day 4, 28 live, 20 named clusters,
 
 check("Import rejects non-SPOTDESK files", () => {
   assert.throws(() => normalizeImport({ foo: 1 }));
+});
+
+check("Import backfills missing objectives for older backups", () => {
+  const raw = JSON.parse(readFileSync(new URL("./fixture_day4.json", import.meta.url), "utf8"));
+  assert.ok(!("objectives" in raw)); // confirms this fixture predates the field
+  const st = normalizeImport(raw);
+  assert.deepEqual(st.objectives, { dailyTarget: 0, weeklyTarget: 0, monthlyTarget: 0, maxAccounts: 0, notes: "" });
 });
 
 console.log(`\nAll ${pass} checks passed.`);

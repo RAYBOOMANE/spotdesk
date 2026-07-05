@@ -1,5 +1,5 @@
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
-import type { AppState, Maybe, OutcomeType } from "@/lib/types";
+import type { AppState, Maybe, Objectives, OutcomeType } from "@/lib/types";
 import * as L from "@/lib/logic";
 import { flushSave, loadState, scheduleSave, snapshotState, type SaveStatus } from "@/lib/persistence";
 import { autoBackup } from "@/lib/backup";
@@ -23,6 +23,7 @@ interface Store {
   saveCapacity: (cc: number, ca: number, names: Record<string, string>) => void;
   clearCapacity: () => void;
   setCapitalLimit: (limit: number) => void;
+  setObjectives: (patch: Partial<Objectives>) => void;
   importState: (st: AppState) => void;
   resetAll: () => void;
 }
@@ -110,6 +111,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     saveCapacity: (cc, ca, names) => apply((s) => L.saveCapacity(s, cc, ca, names)),
     clearCapacity: () => apply((s) => L.clearCapacity(s)),
     setCapitalLimit: (limit) => apply((s) => L.setCapitalLimit(s, limit)),
+    setObjectives: (patch) => apply((s) => L.setObjectives(s, patch)),
     importState: (st) => setState(st),
     resetAll: () => setState(L.freshState()),
   };

@@ -31,6 +31,14 @@ export interface HistoryDay {
   blownOverride?: number;
 }
 
+export interface Objectives {
+  dailyTarget: number; // 0 = unset
+  weeklyTarget: number;
+  monthlyTarget: number;
+  maxAccounts: number; // 0 = unset
+  notes: string;
+}
+
 export interface AppState {
   spots: Record<string, Spot>;
   names: Record<string, string>;
@@ -48,6 +56,7 @@ export interface AppState {
   deployedToday: number;
   dayCount: number;
   history: HistoryDay[];
+  objectives: Objectives;
 }
 
 // null = field left blank → use the same fallback the original app used

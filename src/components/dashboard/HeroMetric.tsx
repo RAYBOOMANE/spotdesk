@@ -7,6 +7,7 @@ export function HeroMetric() {
   const total = state.todayProfit + state.todayPayouts;
   const blows = state.todayLog.filter((l) => l.type === "blew").length;
   const payouts = state.todayLog.filter((l) => l.type === "payout").length;
+  const dailyTarget = state.objectives.dailyTarget;
 
   return (
     <Card className="px-6 py-7">
@@ -19,6 +20,16 @@ export function HeroMetric() {
       <div className="mt-2 font-mono text-data-xs text-faint">
         {blows} blow{blows === 1 ? "" : "s"} · {payouts} payout{payouts === 1 ? "" : "s"} logged today
       </div>
+      {dailyTarget > 0 && (
+        <div
+          className={cn(
+            "mt-1 font-mono text-data-xs font-semibold",
+            total >= dailyTarget ? "text-profit" : "text-loss"
+          )}
+        >
+          {total >= dailyTarget ? "Target hit" : "Behind target"} — daily objective {signed(dailyTarget)}
+        </div>
+      )}
     </Card>
   );
 }

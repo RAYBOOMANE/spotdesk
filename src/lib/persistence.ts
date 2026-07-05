@@ -9,6 +9,7 @@
 // ─────────────────────────────────────────────────────────────────────
 
 import type { AppState } from "./types";
+import { normalizeImport } from "./logic";
 
 export const isTauri = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
 
@@ -57,19 +58,22 @@ export async function loadState(): Promise<AppState | null> {
     if (isTauri) {
       const db = await getDb();
       const rows = await db.select<{ data: string }[]>("SELECT data FROM app_state WHERE id = 1");
-      if (rows && rows.length > 0) return JSON.parse(rows[0].data) as AppState;
+      // Route every load through normalizeImport so state saved by an older
+      // schema version (missing a field added since, e.g. objectives) gets
+      // backfilled instead of crashing on the missing field at render time.
+      if (rows && rows.length > 0) return normalizeImport(JSON.parse(rows[0].data));
       // one-time migration path: if the user previously ran the HTML app in
       // this same webview profile, pull its localStorage state forward.
       const legacy = localStorage.getItem(WEB_KEY);
       if (legacy) {
-        const st = JSON.parse(legacy) as AppState;
+        const st = normalizeImport(JSON.parse(legacy));
         await saveStateNow(st);
         return st;
       }
       return null;
     }
     const raw = localStorage.getItem(WEB_KEY);
-    return raw ? (JSON.parse(raw) as AppState) : null;
+    return raw ? normalizeImport(JSON.parse(raw)) : null;
   } catch (e) {
     console.error("loadState failed", e);
     return null;

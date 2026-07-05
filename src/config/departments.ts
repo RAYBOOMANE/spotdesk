@@ -4,10 +4,14 @@ import {
   Calculator,
   ClipboardList,
   History,
+  Landmark,
   LayoutDashboard,
   LayoutGrid,
   LineChart,
   ScrollText,
+  Target,
+  UserCog,
+  Users,
   Zap,
 } from "lucide-react";
 
@@ -42,7 +46,13 @@ export const DEPARTMENT_TABS: Record<Department, TabMeta[]> = {
     { key: "log", label: "Log", icon: ScrollText },
     { key: "history", label: "History", icon: History },
   ],
-  "ceo-office": [{ key: "overview", label: "Overview", icon: LayoutDashboard }],
+  "ceo-office": [
+    { key: "overview", label: "Overview", icon: LayoutDashboard },
+    { key: "clients", label: "Clients", icon: Users },
+    { key: "managers", label: "Managers", icon: UserCog },
+    { key: "money-held", label: "Money Held", icon: Landmark },
+    { key: "objectives", label: "Objectives", icon: Target },
+  ],
   accounting: [{ key: "overview", label: "Overview", icon: LayoutDashboard }],
   secretary: [{ key: "overview", label: "Overview", icon: LayoutDashboard }],
 };
