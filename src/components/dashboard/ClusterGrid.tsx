@@ -78,7 +78,7 @@ export function ClusterGrid({
           key={id}
           interactive
           className={cn(
-            "flex select-none items-center gap-2 rounded-[9px] px-2 py-1.5",
+            "group flex select-none items-center gap-2 rounded-[9px] px-2 py-1.5",
             occupied ? "border-line" : "border-line/50",
             isSel && "border-ink bg-panel2",
             traded && "border-l-2 border-l-ink",
@@ -109,13 +109,19 @@ export function ClusterGrid({
               {occupied ? (
                 <>
                   <span className="font-semibold text-ink">D{sp.day}</span>{" "}
-                  <span className="text-faint">${tied.toLocaleString()}</span>
+                  <span className="text-faint opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
+                    ${tied.toLocaleString()}
+                  </span>
                 </>
               ) : (
                 <span className="text-faint">free</span>
               )}
             </span>
-            {occupied && <span className="font-mono text-[0.6rem] text-dim">~${fwd.toFixed(0)}</span>}
+            {occupied && (
+              <span className="font-mono text-[0.6rem] text-dim opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
+                ~${fwd.toFixed(0)}
+              </span>
+            )}
           </button>
         </Panel>
       );

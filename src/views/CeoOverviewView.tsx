@@ -51,6 +51,13 @@ export function CeoOverviewView() {
           <div className="font-mono text-data-lg font-bold text-ink">{s.capLabel}</div>
           <div className="mt-1 font-mono text-data-xs text-faint">{s.capPct.toFixed(0)}% of target</div>
         </Card>
+        <Card className="px-4 py-4">
+          <div className="mb-1.5 font-mono text-micro font-medium uppercase tracking-[0.12em] text-dim">
+            Expected Next Outcome
+          </div>
+          <div className="font-mono text-data-lg font-bold text-ink">+${s.fwdTotal.toFixed(0)}</div>
+          <div className="mt-1 font-mono text-data-xs text-faint">forward EV</div>
+        </Card>
       </div>
 
       <Card className="p-5">

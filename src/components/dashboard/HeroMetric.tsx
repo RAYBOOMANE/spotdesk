@@ -1,6 +1,7 @@
 import { useStore } from "@/store/StoreProvider";
 import { todayTotals } from "@/lib/logic";
 import { Card } from "@/components/ui/card";
+import { ProgressBar } from "@/components/ProgressBar";
 import { cn, signed } from "@/lib/utils";
 
 export function HeroMetric() {
@@ -22,13 +23,12 @@ export function HeroMetric() {
         {blows} blow{blows === 1 ? "" : "s"} · {payouts} payout{payouts === 1 ? "" : "s"} logged today
       </div>
       {dailyTarget > 0 && (
-        <div
-          className={cn(
-            "mt-1 font-mono text-data-xs font-semibold",
-            total >= dailyTarget ? "text-profit" : "text-loss"
-          )}
-        >
-          {total >= dailyTarget ? "Target hit" : "Behind target"} — daily objective {signed(dailyTarget)}
+        <div className="mt-3">
+          <div className="mb-1 flex items-center justify-between font-mono text-data-xs text-faint">
+            <span>Daily objective</span>
+            <span>{signed(dailyTarget)}</span>
+          </div>
+          <ProgressBar percent={(total / dailyTarget) * 100} />
         </div>
       )}
     </Card>

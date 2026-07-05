@@ -5,8 +5,6 @@ import { EquityCurve } from "@/components/EquityCurve";
 import { ZoneDistributionChart } from "@/components/dashboard/ZoneDistributionChart";
 import { DeployedCapitalChart } from "@/components/dashboard/DeployedCapitalChart";
 import { CapacityGauge } from "@/components/dashboard/CapacityGauge";
-import { PayoutsVsBlowsChart } from "@/components/dashboard/PayoutsVsBlowsChart";
-import { PackagePerformanceChart } from "@/components/dashboard/PackagePerformanceChart";
 
 export function OverviewView({ onCapacityClick }: { onCapacityClick: () => void }) {
   return (
@@ -23,15 +21,11 @@ export function OverviewView({ onCapacityClick }: { onCapacityClick: () => void 
       <IntradayPnlChart />
 
       {/* Supporting analytics */}
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <EquityCurve />
         <ZoneDistributionChart />
         <DeployedCapitalChart />
-      </div>
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <CapacityGauge onClick={onCapacityClick} />
-        <PayoutsVsBlowsChart />
-        <PackagePerformanceChart />
       </div>
     </div>
   );

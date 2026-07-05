@@ -6,7 +6,7 @@ import type { Task, TaskStatus } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { ProgressBar } from "./ProgressBar";
+import { ProgressBar } from "@/components/ProgressBar";
 
 const STATUS_LABEL: Record<TaskStatus, string> = {
   not_started: "Not started",
