@@ -6,6 +6,7 @@ import { importFromText } from "@/lib/backup";
 import { isTauri } from "@/lib/dataService/platform";
 import { getBackupService } from "@/lib/dataService";
 import { computeTopStats } from "@/lib/stats";
+import { todayTotals } from "@/lib/logic";
 
 export function FooterActions() {
   const store = useStore();
@@ -15,9 +16,7 @@ export function FooterActions() {
   const newDay = async () => {
     const s = computeTopStats(store.state);
     const ok = await dialogs.confirm(
-      `End Day ${store.state.dayCount}?\n\nBanks today's total (+$${(
-        store.state.todayProfit + store.state.todayPayouts
-      ).toLocaleString()}), folds extra investment into each account's cost, and advances ONLY the ${
+      `End Day ${store.state.dayCount}?\n\nBanks today's total (+$${todayTotals(store.state).total.toLocaleString()}), folds extra investment into each account's cost, and advances ONLY the ${
         (store.state.tradedToday || []).length
       } accounts traded today (+1 day). ${s.leftToTrade} occupied accounts were NOT traded and will stay on their day.\n\nAn automatic JSON backup will be written.`,
       { confirmLabel: "End day & advance" }

@@ -1,5 +1,6 @@
 import { useStore } from "@/store/StoreProvider";
 import { computeTopStats } from "@/lib/stats";
+import { todayTotals } from "@/lib/logic";
 import { signed } from "@/lib/utils";
 import { CircularNav } from "@/components/layout/CircularNav";
 import { DEPARTMENTS, type Department } from "@/config/departments";
@@ -16,7 +17,7 @@ function greeting(): string {
 export function HomeView({ onSelectDepartment }: { onSelectDepartment: (d: Department) => void }) {
   const { state } = useStore();
   const s = computeTopStats(state);
-  const todayTotal = state.todayProfit + state.todayPayouts;
+  const todayTotal = todayTotals(state).total;
   const dateLabel = new Date().toLocaleDateString("en-GB", { weekday: "long", day: "2-digit", month: "short" });
 
   return (

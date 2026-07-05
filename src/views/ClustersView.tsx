@@ -33,6 +33,9 @@ export function ClustersView({
 
       <div>
         <SectionHeader>Packages — grouped by client color</SectionHeader>
+        <p className="mb-2 font-mono text-data-xs text-faint">
+          Uses individual log entries — won't reflect a manually corrected archived day total (History → edit a day).
+        </p>
         <Packages />
       </div>
 

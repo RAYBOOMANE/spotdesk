@@ -1,5 +1,6 @@
 import { Bar, BarChart, Cell, Legend, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { useStore } from "@/store/StoreProvider";
+import { todayTotals } from "@/lib/logic";
 import { Card } from "@/components/ui/card";
 import { signed } from "@/lib/utils";
 
@@ -10,7 +11,8 @@ export function PayoutsVsBlowsChart() {
     profit: d.profit || 0,
     payouts: d.payouts || 0,
   }));
-  const data = [...recent, { label: "Today", profit: state.todayProfit, payouts: state.todayPayouts }];
+  const todayTt = todayTotals(state);
+  const data = [...recent, { label: "Today", profit: todayTt.profit, payouts: todayTt.payouts }];
   const isEmpty = state.history.length === 0 && state.todayLog.length === 0;
 
   return (

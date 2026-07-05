@@ -98,6 +98,11 @@ export function ManagersView() {
         <p className="text-sm text-dim">
           Each color group is a manager. Set their split % to compute what's owed from this week's net profit.
         </p>
+        <p className="mt-1 font-mono text-data-xs text-faint">
+          These figures use individual log entries. If an archived day's total was manually corrected in History, that
+          correction is not redistributed here — there's no way to attribute a day-level override to a specific
+          manager.
+        </p>
       </div>
 
       {summaries.length === 0 ? (

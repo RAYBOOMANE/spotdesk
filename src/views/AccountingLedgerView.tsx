@@ -1,13 +1,22 @@
 import { useMemo, useState } from "react";
 import { useStore } from "@/store/StoreProvider";
+import { useDialogs } from "@/components/ConfirmProvider";
 import { gridDims } from "@/lib/logic";
-import { ledgerRows, managerSummaries } from "@/lib/stats";
+import { ledgerRows, ledgerAuthoritativeTotals, managerSummaries, type LedgerRow } from "@/lib/stats";
 import { signed, cn } from "@/lib/utils";
 import { Card } from "@/components/ui/card";
 import { Table, THead, TBody, Th, Td } from "@/components/ui/table";
 
-export function AccountingLedgerView() {
-  const { state } = useStore();
+export function AccountingLedgerView({
+  onOpenSpot,
+  onOpenDay,
+}: {
+  onOpenSpot: (id: string) => void;
+  onOpenDay: (idx: number) => void;
+}) {
+  const store = useStore();
+  const dialogs = useDialogs();
+  const { state } = store;
   const { nClusters } = gridDims(state);
   const managers = managerSummaries(state);
   const allRows = useMemo(() => ledgerRows(state), [state]);
@@ -27,20 +36,54 @@ export function AccountingLedgerView() {
     return true;
   });
 
+  // A day-level total (or override) carries no per-client attribution, so
+  // Net P&L / Total payouts can only be "authoritative" (immune to a manual
+  // editHistoryDay correction) when NOT narrowed to one client/manager. Once
+  // you filter by client or manager, there's no alternative but to fall back
+  // to summing the raw filtered entries -- same as Total invested/losses
+  // always do (see note below the totals).
+  const noEntityFilter = clientFilter === "all" && colorFilter === "all";
+  const authoritative = useMemo(
+    () => ledgerAuthoritativeTotals(state, { dateFrom, dateTo, type: typeFilter }),
+    [state, dateFrom, dateTo, typeFilter]
+  );
+
   const totalInvested = rows.reduce((s, r) => s + r.invested, 0);
-  const totalPayouts = rows.filter((r) => r.type === "payout").reduce((s, r) => s + r.amount, 0);
   const totalLosses = rows.filter((r) => r.net < 0).reduce((s, r) => s + Math.abs(r.net), 0);
-  const netPnl = rows.reduce((s, r) => s + r.net, 0);
+  const totalPayouts = noEntityFilter
+    ? authoritative.grossPayouts
+    : rows.filter((r) => r.type === "payout").reduce((s, r) => s + r.amount, 0);
+  const netPnl = noEntityFilter ? authoritative.netPnl : rows.reduce((s, r) => s + r.net, 0);
 
   const selectClass =
     "w-full rounded-xl border border-line bg-panel2 px-3 py-2.5 font-mono text-[0.8rem] text-ink focus:border-line2 focus:outline-none";
+
+  // Read-only ledger: this never edits anything itself. It just jumps to the
+  // SAME modals used everywhere else in the app (LogModal for a live account,
+  // DayDetailModal for an archived day) -- the actual source, where edits
+  // belong. Historical rows get NO mutation here, only navigation.
+  const openSource = (r: LedgerRow) => {
+    if (r.historyIndex != null) onOpenDay(r.historyIndex);
+    else onOpenSpot(r.id);
+  };
+
+  const deleteEntry = async (r: LedgerRow) => {
+    if (r.todayLogIndex == null) return;
+    const ok = await dialogs.confirm(
+      `Delete this ${r.type} entry for ${r.id} (${signed(Math.round(r.net))})?\nToday's totals will be adjusted back before you re-log the correct one.`,
+      { confirmLabel: "Delete entry", danger: true }
+    );
+    if (ok) store.deleteLog(r.todayLogIndex);
+  };
 
   return (
     <div className="flex flex-col gap-6">
       <div>
         <h1 className="text-lg font-semibold tracking-tight text-ink">Ledger</h1>
         <p className="text-sm text-dim">
-          Every logged entry, today and archived — read-only, built from existing trading data. Note: only outcomes
+          Every logged entry, today and archived — read-only, built from existing trading data. "Open source" jumps
+          to the account (today) or the archived day it came from — edits happen there, not here. Today's rows can
+          also be deleted directly (removes its effect before you re-log the correct entry). Note: only outcomes
           (blows/payouts) are logged as ledger events; deploying capital (Set Day) isn't recorded as its own entry in
           the current data model.
         </p>
@@ -71,6 +114,16 @@ export function AccountingLedgerView() {
             {signed(Math.round(netPnl))}
           </div>
         </Card>
+      </div>
+
+      <div className="rounded-lg border border-line bg-panel2 px-3 py-2 font-mono text-data-xs text-faint">
+        Net P&amp;L and Total payouts/profits use each day's authoritative totals (so a manually corrected archived
+        day is always reflected here) — unless a client or manager filter is active, in which case they're summed
+        from individual entries instead, since a day-level total has no per-client breakdown.{" "}
+        {!noEntityFilter && (
+          <span className="text-invested">Client/manager filter active — totals below use individual entries.</span>
+        )}{" "}
+        Total invested and Total losses always use individual entries (no day-level equivalent exists for either).
       </div>
 
       <Card className="p-5">
@@ -142,12 +195,13 @@ export function AccountingLedgerView() {
               <Th>Invested</Th>
               <Th>Net P&amp;L</Th>
               <Th>Source</Th>
+              <Th></Th>
             </tr>
           </THead>
           <TBody>
             {rows.length === 0 ? (
               <tr>
-                <Td colSpan={8} className="text-center text-faint">
+                <Td colSpan={9} className="text-center text-faint">
                   No entries match these filters.
                 </Td>
               </tr>
@@ -170,6 +224,24 @@ export function AccountingLedgerView() {
                     {signed(Math.round(r.net))}
                   </Td>
                   <Td className="text-data-xs text-faint">{r.sourceLabel}</Td>
+                  <Td>
+                    <div className="flex justify-end gap-1.5">
+                      <button
+                        onClick={() => openSource(r)}
+                        className="rounded-lg border border-line bg-panel2 px-2.5 py-1 text-[0.62rem] font-bold text-dim transition-colors hover:border-line2 hover:text-ink"
+                      >
+                        Open source ↗
+                      </button>
+                      {r.todayLogIndex != null && (
+                        <button
+                          onClick={() => deleteEntry(r)}
+                          className="rounded-lg border border-loss/40 px-2.5 py-1 text-[0.62rem] font-bold text-loss transition-colors hover:bg-loss/10"
+                        >
+                          Delete
+                        </button>
+                      )}
+                    </div>
+                  </Td>
                 </tr>
               ))
             )}

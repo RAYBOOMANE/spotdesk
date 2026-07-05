@@ -35,8 +35,18 @@ import {
   addWithdrawalMethod,
   updateWithdrawalMethod,
   removeWithdrawalMethod,
+  todayTotals,
 } from "../src/lib/logic";
-import { computeTopStats, equityPoints, periodTotals, managerSummaries, moneyHeldRemaining, moneyHeldStatus } from "../src/lib/stats";
+import {
+  computeTopStats,
+  equityPoints,
+  periodTotals,
+  managerSummaries,
+  moneyHeldRemaining,
+  moneyHeldStatus,
+  packageGroups,
+  ledgerAuthoritativeTotals,
+} from "../src/lib/stats";
 
 let pass = 0;
 function check(name: string, fn: () => void) {
@@ -445,6 +455,68 @@ check("Import migrates old-shape client profiles: string vpsInfo, untyped paymen
   assert.deepEqual(profile.vpsInfo, { ipAddress: "", username: "", password: "" });
   assert.equal(profile.paymentMethods[0].type, "other");
   assert.deepEqual(profile.withdrawalMethods, []);
+});
+
+check("Delete-then-relog fully reverses/reapplies today's log (no double count)", () => {
+  let st = freshState();
+  st = setDaySingle(st, "1-1", 3, null, null);
+  st = logOutcomeSingle(st, "1-1", 3, "blew", null, null, 700); // wrong entry: net +27
+  assert.equal(st.todayProfit, 27);
+  st = deleteLog(st, 0); // reverse the wrong entry
+  assert.equal(st.todayProfit, 0);
+  assert.equal(st.todayLog.length, 0);
+  st = setDaySingle(st, "1-1", 3, null, null);
+  st = logOutcomeSingle(st, "1-1", 3, "blew", null, null, 900); // corrected entry: net +227
+  assert.equal(st.todayProfit, 227); // NOT 27 + 227 -- old effect was fully removed first
+  assert.equal(st.todayLog.length, 1);
+});
+
+check("todayTotals derives live from todayLog, matching the incremental counters under correct operation", () => {
+  let st = freshState();
+  st = logOutcomeSingle(st, "1-1", 3, "blew", null, null, 700); // +27
+  st = logOutcomeSingle(st, "1-2", 11, "payout", 280, null, 900); // +620
+  let tt = todayTotals(st);
+  assert.equal(tt.profit, st.todayProfit);
+  assert.equal(tt.payouts, st.todayPayouts);
+  assert.equal(tt.total, st.todayProfit + st.todayPayouts);
+  st = deleteLog(st, 0); // remove the blew entry
+  tt = todayTotals(st);
+  assert.equal(tt.profit, 0);
+  assert.equal(tt.payouts, 620);
+  assert.equal(tt.total, st.todayProfit + st.todayPayouts);
+});
+
+check("editHistoryDay override is reflected in equityPoints/periodTotals/computeTopStats/ledgerAuthoritativeTotals", () => {
+  let st = freshState();
+  st = logOutcomeSingle(st, "1-1", 3, "blew", null, null, 700); // +27
+  st = rollDay(st, "2026-07-01T12:00:00.000Z"); // banks day1 total=27
+  st = editHistoryDay(st, 0, { profit: 500, payouts: 0, payoutGross: 0, deployed: 0, blownOverride: 1 });
+  const d = st.history[0];
+  assert.equal(d.total, 500);
+
+  const eq = equityPoints(st);
+  assert.equal(eq.total, 500); // reflects the override, not the raw log's 27
+
+  const pt = periodTotals(st, new Date("2026-07-03T12:00:00Z"));
+  assert.equal(pt.allTime, 500);
+
+  const ts = computeTopStats(st, new Date("2026-07-03T12:00:00Z"));
+  assert.equal(ts.monthPayouts, 0); // payouts overridden to 0
+
+  const auth = ledgerAuthoritativeTotals(st, { dateFrom: "", dateTo: "", type: "all" });
+  assert.equal(auth.netPnl, 500); // reflects the override, not the raw log's 27
+});
+
+check("packageGroups/managerSummaries intentionally reflect raw log entries, not an editHistoryDay override (known, tested characteristic -- no auto-redistribution across clients/managers)", () => {
+  let st = freshState();
+  const hex = colorOf(st, 1);
+  st = logOutcomeSingle(st, "1-1", 3, "blew", null, null, 700); // +27
+  st = rollDay(st, "2026-07-01T12:00:00.000Z");
+  st = editHistoryDay(st, 0, { profit: 500, payouts: 0, payoutGross: 0, deployed: 0, blownOverride: 1 });
+  const pkg = packageGroups(st).find((p) => p.hex === hex)!;
+  assert.equal(pkg.week, 27); // NOT 500 -- deliberately unaffected by the day-level override
+  const mgr = managerSummaries(st).find((m) => m.hex === hex)!;
+  assert.equal(mgr.allTimePL, 27); // same
 });
 
 console.log(`\nAll ${pass} checks passed.`);

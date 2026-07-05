@@ -13,7 +13,9 @@ export function PackagePerformanceChart() {
       <div className="mb-1.5 font-mono text-micro font-medium uppercase tracking-[0.14em] text-dim">
         Package Performance
       </div>
-      <div className="mb-4 font-mono text-data-xs text-faint">7-day net $ per package</div>
+      <div className="mb-4 font-mono text-data-xs text-faint">
+        7-day net $ per package — from individual entries, not manually corrected day totals
+      </div>
       <div className="h-[168px] w-full">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={groups} margin={{ top: 8, right: 8, bottom: 0, left: 8 }}>

@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useStore } from "@/store/StoreProvider";
+import { netOfLog } from "@/lib/logic";
+import { signed } from "@/lib/utils";
 
 function Cell({
   label,
@@ -54,6 +56,14 @@ export function DayDetailModal({ idx, onClose }: { idx: number | null; onClose: 
     ? new Date(d.date).toLocaleDateString("en-GB", { weekday: "long", day: "2-digit", month: "short", year: "numeric" })
     : "";
 
+  // This day's own log entries are the authoritative record of what actually
+  // happened. If the day's declared total doesn't match what those entries
+  // sum to, someone has manually overridden it below -- flag it plainly
+  // rather than let the mismatch sit invisible. (Per-manager/package
+  // breakdowns elsewhere always reflect the raw entries, never this override.)
+  const logSum = (d.log || []).reduce((s, w) => s + netOfLog(w), 0);
+  const hasOverride = Math.abs(logSum - d.total) > 0.01;
+
   const save = () => {
     store.editHistoryDay(idx, {
       profit: parseFloat(profit),
@@ -73,6 +83,14 @@ export function DayDetailModal({ idx, onClose }: { idx: number | null; onClose: 
           {dt} · total +${d.total.toLocaleString()} (blows +${d.profit.toLocaleString()} · payout profit +$
           {(d.payouts || 0).toLocaleString()}) · deployed ${(d.deployed || 0).toLocaleString()}
         </DialogDescription>
+
+        {hasOverride && (
+          <div className="mb-3 rounded-lg border border-invested/40 bg-invested/10 px-3 py-2 font-mono text-[0.62rem] leading-relaxed text-invested">
+            Manual override active — this day's declared total ({signed(d.total)}) doesn't match what its own log
+            entries sum to ({signed(Math.round(logSum * 100) / 100)}). Accounting's Net P&amp;L and history charts use
+            the declared total; Managers/Package breakdowns use the raw entries and won't reflect this override.
+          </div>
+        )}
 
         <div className="mb-1 text-[0.58rem] uppercase tracking-[0.1em] text-dim">Edit this day's totals</div>
         <div className="grid grid-cols-2 gap-2">

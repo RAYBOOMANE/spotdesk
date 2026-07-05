@@ -1,10 +1,11 @@
 import { useStore } from "@/store/StoreProvider";
+import { todayTotals } from "@/lib/logic";
 import { Card } from "@/components/ui/card";
 import { cn, signed } from "@/lib/utils";
 
 export function HeroMetric() {
   const { state } = useStore();
-  const total = state.todayProfit + state.todayPayouts;
+  const total = todayTotals(state).total;
   const blows = state.todayLog.filter((l) => l.type === "blew").length;
   const payouts = state.todayLog.filter((l) => l.type === "payout").length;
   const dailyTarget = state.objectives.dailyTarget;

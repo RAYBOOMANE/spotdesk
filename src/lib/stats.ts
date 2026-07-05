@@ -1,7 +1,7 @@
 // Derived, read-only stats — mirrors the math inside the reference render().
 
 import { LADDER, PACKAGE_COLORS, type Zone } from "./ladder";
-import { clusterOf, colorOf, fwdEV, gridDims, managerOf, netOfLog, PhaseFilter } from "./logic";
+import { clusterOf, colorOf, fwdEV, gridDims, managerOf, netOfLog, PhaseFilter, todayTotals } from "./logic";
 import { N_CLUSTERS, ACCTS_PER_CLUSTER } from "./ladder";
 import type { AppState, LogEntry, MoneyHeldEntry, OutcomeType } from "./types";
 
@@ -53,7 +53,7 @@ export function computeTopStats(state: AppState, now: Date = new Date()): TopSta
   (state.history || []).forEach((d) => {
     if (d.date && new Date(d.date) >= monthStart) monthPayouts += d.payouts || 0;
   });
-  monthPayouts += state.todayPayouts;
+  monthPayouts += todayTotals(state).payouts;
 
   const totalSlots = N_CLUSTERS * ACCTS_PER_CLUSTER;
   const denom = state.capacityTarget && state.capacityTarget > 0 ? state.capacityTarget : totalSlots;
@@ -121,7 +121,7 @@ export interface PeriodTotals {
   allTime: number;
 }
 export function periodTotals(state: AppState, now: Date = new Date()): PeriodTotals {
-  const today = state.todayProfit + state.todayPayouts;
+  const today = todayTotals(state).total;
   const week = state.history.slice(-7).reduce((sum, d) => sum + (d.total || 0), 0) + today;
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
   const month =
@@ -308,6 +308,8 @@ export interface LedgerRow {
   dateLabel: string;
   time: string;
   sourceLabel: string; // "Today" or "Day N"
+  historyIndex: number | null; // index into state.history[] (open via DayDetailModal); null = today's log
+  todayLogIndex: number | null; // index into state.todayLog[] (delete via deleteLog); null = an archived-day row
   id: string;
   cluster: number;
   clientName: string;
@@ -321,7 +323,14 @@ export interface LedgerRow {
 export function ledgerRows(state: AppState): LedgerRow[] {
   const rows: LedgerRow[] = [];
 
-  const push = (w: LogEntry, isoDate: string, dateLabel: string, sourceLabel: string) => {
+  const push = (
+    w: LogEntry,
+    isoDate: string,
+    dateLabel: string,
+    sourceLabel: string,
+    historyIndex: number | null,
+    todayLogIndex: number | null
+  ) => {
     const cluster = clusterOf(w.id);
     rows.push({
       key: `${sourceLabel}-${w.id}-${w.time}-${rows.length}`,
@@ -329,6 +338,8 @@ export function ledgerRows(state: AppState): LedgerRow[] {
       dateLabel,
       time: w.time,
       sourceLabel,
+      historyIndex,
+      todayLogIndex,
       id: w.id,
       cluster,
       clientName: state.names && state.names[cluster] ? state.names[cluster] : "C" + cluster,
@@ -340,16 +351,66 @@ export function ledgerRows(state: AppState): LedgerRow[] {
     });
   };
 
-  (state.history || []).forEach((d) => {
+  (state.history || []).forEach((d, historyIndex) => {
     const isoDate = d.date ? d.date.slice(0, 10) : "";
     const dateLabel = d.date
       ? new Date(d.date).toLocaleDateString("en-GB", { day: "2-digit", month: "short" })
       : `Day ${d.day}`;
-    (d.log || []).forEach((w) => push(w, isoDate, dateLabel, `Day ${d.day}`));
+    (d.log || []).forEach((w) => push(w, isoDate, dateLabel, `Day ${d.day}`, historyIndex, null));
   });
 
   const todayIso = new Date().toISOString().slice(0, 10);
-  state.todayLog.forEach((w) => push(w, todayIso, "Today", "Today"));
+  state.todayLog.forEach((w, todayLogIndex) => push(w, todayIso, "Today", "Today", null, todayLogIndex));
 
   return rows.reverse(); // newest first
+}
+
+// Authoritative ledger totals — Net P&L and gross payouts derived from each
+// day's OWN aggregate fields (d.total/d.profit/d.payouts/d.payoutGross for
+// archived days, live todayLog for today), NOT by re-summing ledgerRows.
+// This is what makes Accounting's headline numbers agree with Trading Floor
+// Overview / CEO Office even after a manual editHistoryDay correction —
+// unlike ledgerRows, which intentionally shows the raw, unedited entries.
+// Only valid for the WHOLE ledger (no client/manager narrowing): a day-level
+// total carries no per-client attribution, so a client/manager filter must
+// fall back to summing the filtered rows instead (see AccountingLedgerView).
+export interface AuthoritativeTotals {
+  netPnl: number;
+  grossPayouts: number;
+}
+export function ledgerAuthoritativeTotals(
+  state: AppState,
+  opts: { dateFrom: string; dateTo: string; type: "all" | "blew" | "payout" }
+): AuthoritativeTotals {
+  let netPnl = 0;
+  let grossPayouts = 0;
+
+  const dayNet = (profit: number, payouts: number) => {
+    if (opts.type === "blew") return profit;
+    if (opts.type === "payout") return payouts;
+    return profit + payouts;
+  };
+
+  (state.history || []).forEach((d) => {
+    const isoDate = d.date ? d.date.slice(0, 10) : "";
+    if (opts.dateFrom && isoDate && isoDate < opts.dateFrom) return;
+    if (opts.dateTo && isoDate && isoDate > opts.dateTo) return;
+    netPnl += dayNet(d.profit || 0, d.payouts || 0);
+    if (opts.type !== "blew") {
+      const gross = d.payoutGross ?? (d.log || []).filter((l) => l.type === "payout").reduce((s, l) => s + (l.amount || 0), 0);
+      grossPayouts += gross;
+    }
+  });
+
+  const todayIso = new Date().toISOString().slice(0, 10);
+  const todayInRange = (!opts.dateFrom || todayIso >= opts.dateFrom) && (!opts.dateTo || todayIso <= opts.dateTo);
+  if (todayInRange) {
+    const tt = todayTotals(state);
+    netPnl += dayNet(tt.profit, tt.payouts);
+    if (opts.type !== "blew") {
+      grossPayouts += state.todayLog.filter((l) => l.type === "payout").reduce((s, l) => s + (l.amount || 0), 0);
+    }
+  }
+
+  return { netPnl, grossPayouts };
 }

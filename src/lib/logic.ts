@@ -301,18 +301,33 @@ export function deployedNow(state: AppState): number {
   return deployed;
 }
 
+// Today's P&L, derived live from todayLog rather than trusted from the
+// incrementally-patched todayProfit/todayPayouts counters. Those counters
+// stay in the schema (setDaySingle/logOutcomeSingle/deleteLog still
+// maintain them, unchanged) and are provably correct as long as every
+// mutation goes through this file's own functions -- but anything that
+// BAKES a number permanently (rollDay writing to history) or DISPLAYS a
+// headline figure should read the authoritative source (the log entries
+// themselves) directly, so a future gap in that invariant can't silently
+// corrupt history or drift a displayed total.
+export function todayTotals(state: AppState): { profit: number; payouts: number; total: number } {
+  const profit = state.todayLog.filter((l) => l.type === "blew").reduce((s, l) => s + netOfLog(l), 0);
+  const payouts = state.todayLog.filter((l) => l.type === "payout").reduce((s, l) => s + netOfLog(l), 0);
+  return { profit, payouts, total: profit + payouts };
+}
+
 // ── New Day (the roll) ───────────────────────────────────────────────
 // 1) archive today  2) fold extra into cost for every occupied account
 // 3) advance ONLY accounts traded today by +1 (cap 14)  4) reset counters.
 export function rollDay(state: AppState, dateIso?: string): AppState {
   const st = clone(state);
-  const total = st.todayProfit + st.todayPayouts;
+  const { profit, payouts, total } = todayTotals(st);
   const deployed = deployedNow(st);
   const payoutGross = st.todayLog.filter((l) => l.type === "payout").reduce((s, l) => s + (l.amount || 0), 0);
   st.history.push({
     day: st.dayCount,
-    profit: st.todayProfit,
-    payouts: st.todayPayouts,
+    profit,
+    payouts,
     payoutGross,
     total,
     deployed,
