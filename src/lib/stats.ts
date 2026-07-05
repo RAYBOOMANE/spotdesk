@@ -3,7 +3,7 @@
 import { LADDER, PACKAGE_COLORS, type Zone } from "./ladder";
 import { clusterOf, colorOf, fwdEV, gridDims, managerOf, netOfLog, PhaseFilter, todayTotals } from "./logic";
 import { N_CLUSTERS, ACCTS_PER_CLUSTER } from "./ladder";
-import type { AppState, LogEntry, MoneyHeldEntry, OutcomeType } from "./types";
+import type { AppState, LogEntry, MoneyHeldEntry, OutcomeType, Task } from "./types";
 
 export interface TopStats {
   deployed: number;
@@ -413,4 +413,45 @@ export function ledgerAuthoritativeTotals(
   }
 
   return { netPnl, grossPayouts };
+}
+
+// ── Secretary → task views ────────────────────────────────────────────
+export type SecretaryFilter = "today" | "upcoming" | "all" | "completed";
+
+export function secretaryTasks(state: AppState, filter: SecretaryFilter, now: Date = new Date()): Task[] {
+  const today = now.toISOString().slice(0, 10);
+  const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().slice(0, 10);
+  const tasks = state.tasks || [];
+
+  let filtered: Task[];
+  switch (filter) {
+    case "today":
+      // Exactly today's deadline only -- no overdue, no no-deadline tasks.
+      filtered = tasks.filter((t) => t.status !== "completed" && t.deadline === today);
+      break;
+    case "upcoming":
+      // Bounded to the current calendar month -- next month's deadlines don't show here.
+      filtered = tasks.filter(
+        (t) => t.status !== "completed" && !!t.deadline && t.deadline > today && t.deadline <= monthEnd
+      );
+      break;
+    case "completed":
+      filtered = tasks.filter((t) => t.status === "completed");
+      break;
+    case "all":
+    default:
+      filtered = tasks;
+      break;
+  }
+
+  // Overdue first, then soonest deadline, then newest.
+  return [...filtered].sort((a, b) => {
+    const aOver = !!a.deadline && a.deadline < today && a.status !== "completed";
+    const bOver = !!b.deadline && b.deadline < today && b.status !== "completed";
+    if (aOver !== bOver) return aOver ? -1 : 1;
+    if (a.deadline && b.deadline && a.deadline !== b.deadline) return a.deadline < b.deadline ? -1 : 1;
+    if (a.deadline && !b.deadline) return -1;
+    if (!a.deadline && b.deadline) return 1;
+    return a.createdAt < b.createdAt ? 1 : -1;
+  });
 }

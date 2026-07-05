@@ -57,6 +57,7 @@ import {
   moneyHeldStatus,
   packageGroups,
   ledgerAuthoritativeTotals,
+  secretaryTasks,
 } from "../src/lib/stats";
 
 let pass = 0;
@@ -688,6 +689,63 @@ check("Import backfills missing tasks for older backups", () => {
   assert.ok(!("tasks" in raw)); // confirms this fixture predates the field
   const st = normalizeImport(raw);
   assert.deepEqual(st.tasks, []);
+});
+
+check("addTask with initial steps creates the task and its steps atomically -- progress reflects them immediately", () => {
+  let st = freshState();
+  st = addTask(st, {
+    title: "Ship release",
+    steps: [
+      { title: "a", completed: true },
+      { title: "b", completed: true },
+      { title: "c", completed: false },
+      { title: "d", completed: false },
+    ],
+  });
+  const t = st.tasks[0];
+  assert.equal(t.steps.length, 4);
+  assert.equal(taskProgress(t), 50); // 2/4 already-completed steps, no separate addStep calls needed
+  assert.equal(t.progressPercent, 50);
+  assert.equal(t.status, "in_progress");
+});
+
+check("secretaryTasks 'today': exact deadline match only -- excludes overdue, no-deadline, and completed", () => {
+  let st = freshState();
+  const now = new Date("2026-07-15T12:00:00.000Z");
+  st = addTask(st, { title: "Due today", deadline: "2026-07-15" });
+  st = addTask(st, { title: "Overdue", deadline: "2026-07-10" });
+  st = addTask(st, { title: "No deadline" });
+  st = addTask(st, { title: "Completed today" });
+  st = updateTask(st, st.tasks[3].id, { status: "completed" });
+
+  const today = secretaryTasks(st, "today", now);
+  assert.equal(today.length, 1);
+  assert.equal(today[0].title, "Due today");
+});
+
+check("secretaryTasks 'upcoming': bounded to the current calendar month -- next month's deadlines don't show", () => {
+  let st = freshState();
+  const now = new Date("2026-07-15T12:00:00.000Z");
+  st = addTask(st, { title: "Later this month", deadline: "2026-07-25" });
+  st = addTask(st, { title: "Next month", deadline: "2026-08-02" });
+  st = addTask(st, { title: "Overdue", deadline: "2026-07-10" });
+  st = addTask(st, { title: "Due today", deadline: "2026-07-15" });
+
+  const upcoming = secretaryTasks(st, "upcoming", now);
+  assert.equal(upcoming.length, 1);
+  assert.equal(upcoming[0].title, "Later this month");
+});
+
+check("secretaryTasks 'all' includes everything; 'completed' includes only completed", () => {
+  let st = freshState();
+  st = addTask(st, { title: "A" });
+  st = addTask(st, { title: "B" });
+  st = updateTask(st, st.tasks[1].id, { status: "completed" });
+
+  assert.equal(secretaryTasks(st, "all").length, 2);
+  const completed = secretaryTasks(st, "completed");
+  assert.equal(completed.length, 1);
+  assert.equal(completed[0].title, "B");
 });
 
 console.log(`\nAll ${pass} checks passed.`);

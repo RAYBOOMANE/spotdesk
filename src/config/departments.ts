@@ -12,6 +12,7 @@ import {
   LayoutDashboard,
   LayoutGrid,
   LineChart,
+  ListPlus,
   ListTodo,
   ScrollText,
   Target,
@@ -61,6 +62,7 @@ export const DEPARTMENT_TABS: Record<Department, TabMeta[]> = {
   accounting: [{ key: "overview", label: "Overview", icon: LayoutDashboard }],
   secretary: [
     { key: "today", label: "Today", icon: CalendarClock },
+    { key: "new-task", label: "New Task", icon: ListPlus },
     { key: "upcoming", label: "Upcoming", icon: CalendarDays },
     { key: "all", label: "All Tasks", icon: ListTodo },
     { key: "projects", label: "Projects", icon: FolderKanban },

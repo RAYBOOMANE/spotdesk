@@ -685,12 +685,20 @@ function recomputeAuto(t: Task): Task {
 
 export function addTask(
   state: AppState,
-  fields: { title: string; notes?: string; urgency?: TaskLevel; importance?: TaskLevel; deadline?: string },
+  fields: {
+    title: string;
+    notes?: string;
+    urgency?: TaskLevel;
+    importance?: TaskLevel;
+    deadline?: string;
+    steps?: Omit<TaskStep, "id">[]; // create with subtasks in one atomic call -- no create-then-edit round trip
+  },
   id?: string
 ): AppState {
   const st = clone(state);
   if (!st.tasks) st.tasks = [];
-  st.tasks.push({
+  const steps: TaskStep[] = (fields.steps || []).map((s) => ({ ...s, id: genId() }));
+  let t: Task = {
     id: id ?? genId(),
     title: fields.title,
     notes: fields.notes || "",
@@ -699,10 +707,12 @@ export function addTask(
     importance: fields.importance || "medium",
     deadline: fields.deadline || undefined,
     createdAt: new Date().toISOString(),
-    steps: [],
+    steps,
     progressMode: "auto",
     progressPercent: 0,
-  });
+  };
+  t = recomputeAuto(t); // if any initial step was created already-done, reflect it immediately
+  st.tasks.push(t);
   return st;
 }
 

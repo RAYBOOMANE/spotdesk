@@ -109,7 +109,6 @@ export function TaskCard({ task }: { task: Task }) {
                 Critical
               </Badge>
             )}
-            {task.steps.length > 0 && <Badge className="bg-panel text-faint">Project</Badge>}
           </div>
           {task.notes && <p className="mt-0.5 line-clamp-2 font-mono text-data-xs text-dim">{task.notes}</p>}
           <div className="mt-1 flex flex-wrap items-center gap-2 font-mono text-data-xs">

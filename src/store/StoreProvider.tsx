@@ -60,7 +60,14 @@ interface Store {
   updateWithdrawalMethod: (cluster: number, id: string, patch: Partial<WithdrawalMethod>) => void;
   removeWithdrawalMethod: (cluster: number, id: string) => void;
   addSettlement: (entryId: string, settlement: Omit<Settlement, "id">) => void;
-  addTask: (fields: { title: string; notes?: string; urgency?: Task["urgency"]; importance?: Task["importance"]; deadline?: string }) => void;
+  addTask: (fields: {
+    title: string;
+    notes?: string;
+    urgency?: Task["urgency"];
+    importance?: Task["importance"];
+    deadline?: string;
+    steps?: Omit<TaskStep, "id">[];
+  }) => void;
   updateTask: (
     id: string,
     patch: Partial<Pick<Task, "title" | "notes" | "status" | "urgency" | "importance" | "deadline">>

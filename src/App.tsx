@@ -16,6 +16,8 @@ import { ManagersView } from "@/views/ManagersView";
 import { MoneyHeldView } from "@/views/MoneyHeldView";
 import { AccountingLedgerView } from "@/views/AccountingLedgerView";
 import { TaskListView } from "@/views/TaskListView";
+import { NewTaskView } from "@/views/NewTaskView";
+import { ProjectsView } from "@/views/ProjectsView";
 import { LogModal } from "@/components/modals/LogModal";
 import { MultiLogModal } from "@/components/modals/MultiLogModal";
 import { DayDetailModal } from "@/components/modals/DayDetailModal";
@@ -92,9 +94,10 @@ export default function App() {
         {department === "accounting" && <AccountingLedgerView onOpenDay={openDay} />}
 
         {department === "secretary" && tab === "today" && <TaskListView filter="today" />}
+        {department === "secretary" && tab === "new-task" && <NewTaskView />}
         {department === "secretary" && tab === "upcoming" && <TaskListView filter="upcoming" />}
         {department === "secretary" && tab === "all" && <TaskListView filter="all" />}
-        {department === "secretary" && tab === "projects" && <TaskListView filter="projects" />}
+        {department === "secretary" && tab === "projects" && <ProjectsView />}
         {department === "secretary" && tab === "completed" && <TaskListView filter="completed" />}
       </AppShell>
 
