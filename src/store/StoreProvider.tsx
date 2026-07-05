@@ -1,5 +1,17 @@
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
-import type { AppState, Maybe, Objectives, OutcomeType } from "@/lib/types";
+import type {
+  AppLogin,
+  AppState,
+  ClientProfile,
+  Maybe,
+  MoneyHeldEntry,
+  Objectives,
+  OutcomeType,
+  PaymentMethod,
+  Settlement,
+  VpsInfo,
+  WithdrawalMethod,
+} from "@/lib/types";
 import * as L from "@/lib/logic";
 import { flushSave, loadState, scheduleSave, snapshotState, type SaveStatus } from "@/lib/persistence";
 import { autoBackup } from "@/lib/backup";
@@ -24,6 +36,26 @@ interface Store {
   clearCapacity: () => void;
   setCapitalLimit: (limit: number) => void;
   setObjectives: (patch: Partial<Objectives>) => void;
+  setManagerSplit: (hex: string, pct: number) => void;
+  setManagerName: (hex: string, name: string) => void;
+  addMoneyHeld: (entry: Omit<MoneyHeldEntry, "id">) => void;
+  updateMoneyHeld: (id: string, patch: Partial<MoneyHeldEntry>) => void;
+  deleteMoneyHeld: (id: string) => void;
+  setClientProfileField: (
+    cluster: number,
+    patch: Partial<Pick<ClientProfile, "firstName" | "familyName" | "address" | "vpsLocation">>
+  ) => void;
+  setVpsInfo: (cluster: number, patch: Partial<VpsInfo>) => void;
+  addAppLogin: (cluster: number, login: Omit<AppLogin, "id">) => void;
+  updateAppLogin: (cluster: number, id: string, patch: Partial<AppLogin>) => void;
+  removeAppLogin: (cluster: number, id: string) => void;
+  addPaymentMethod: (cluster: number, pm: Omit<PaymentMethod, "id">) => void;
+  updatePaymentMethod: (cluster: number, id: string, patch: Partial<PaymentMethod>) => void;
+  removePaymentMethod: (cluster: number, id: string) => void;
+  addWithdrawalMethod: (cluster: number, wm: Omit<WithdrawalMethod, "id">) => void;
+  updateWithdrawalMethod: (cluster: number, id: string, patch: Partial<WithdrawalMethod>) => void;
+  removeWithdrawalMethod: (cluster: number, id: string) => void;
+  addSettlement: (entryId: string, settlement: Omit<Settlement, "id">) => void;
   importState: (st: AppState) => void;
   resetAll: () => void;
 }
@@ -112,6 +144,23 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     clearCapacity: () => apply((s) => L.clearCapacity(s)),
     setCapitalLimit: (limit) => apply((s) => L.setCapitalLimit(s, limit)),
     setObjectives: (patch) => apply((s) => L.setObjectives(s, patch)),
+    setManagerSplit: (hex, pct) => apply((s) => L.setManagerSplit(s, hex, pct)),
+    setManagerName: (hex, name) => apply((s) => L.setManagerName(s, hex, name)),
+    addMoneyHeld: (entry) => apply((s) => L.addMoneyHeld(s, entry)),
+    updateMoneyHeld: (id, patch) => apply((s) => L.updateMoneyHeld(s, id, patch)),
+    deleteMoneyHeld: (id) => apply((s) => L.deleteMoneyHeld(s, id)),
+    setClientProfileField: (cluster, patch) => apply((s) => L.setClientProfileField(s, cluster, patch)),
+    setVpsInfo: (cluster, patch) => apply((s) => L.setVpsInfo(s, cluster, patch)),
+    addAppLogin: (cluster, login) => apply((s) => L.addAppLogin(s, cluster, login)),
+    updateAppLogin: (cluster, id, patch) => apply((s) => L.updateAppLogin(s, cluster, id, patch)),
+    removeAppLogin: (cluster, id) => apply((s) => L.removeAppLogin(s, cluster, id)),
+    addPaymentMethod: (cluster, pm) => apply((s) => L.addPaymentMethod(s, cluster, pm)),
+    updatePaymentMethod: (cluster, id, patch) => apply((s) => L.updatePaymentMethod(s, cluster, id, patch)),
+    removePaymentMethod: (cluster, id) => apply((s) => L.removePaymentMethod(s, cluster, id)),
+    addWithdrawalMethod: (cluster, wm) => apply((s) => L.addWithdrawalMethod(s, cluster, wm)),
+    updateWithdrawalMethod: (cluster, id, patch) => apply((s) => L.updateWithdrawalMethod(s, cluster, id, patch)),
+    removeWithdrawalMethod: (cluster, id) => apply((s) => L.removeWithdrawalMethod(s, cluster, id)),
+    addSettlement: (entryId, settlement) => apply((s) => L.addSettlement(s, entryId, settlement)),
     importState: (st) => setState(st),
     resetAll: () => setState(L.freshState()),
   };

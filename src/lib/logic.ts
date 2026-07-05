@@ -10,7 +10,27 @@
 // ─────────────────────────────────────────────────────────────────────
 
 import { LADDER, FWD, N_CLUSTERS, ACCTS_PER_CLUSTER, PACKAGE_COLORS } from "./ladder";
-import type { AppState, HistoryDay, LogEntry, Maybe, Objectives, OutcomeType, Spot } from "./types";
+import type {
+  AppLogin,
+  AppState,
+  ClientProfile,
+  HistoryDay,
+  LogEntry,
+  ManagerMeta,
+  Maybe,
+  MoneyHeldEntry,
+  Objectives,
+  OutcomeType,
+  PaymentMethod,
+  Settlement,
+  Spot,
+  VpsInfo,
+  WithdrawalMethod,
+} from "./types";
+
+export function genId(): string {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+}
 
 export function fwdEV(day: number): number {
   if (day < 1 || day > 14) return 0;
@@ -37,6 +57,23 @@ export function gridDims(state: AppState): { nClusters: number; nAccts: number }
 
 function defaultObjectives(): Objectives {
   return { dailyTarget: 0, weeklyTarget: 0, monthlyTarget: 0, maxAccounts: 0, notes: "" };
+}
+
+function defaultVpsInfo(): VpsInfo {
+  return { ipAddress: "", username: "", password: "" };
+}
+
+function defaultClientProfile(): ClientProfile {
+  return {
+    firstName: "",
+    familyName: "",
+    address: "",
+    vpsLocation: "",
+    vpsInfo: defaultVpsInfo(),
+    paymentMethods: [],
+    withdrawalMethods: [],
+    appLogins: [],
+  };
 }
 
 export function freshState(): AppState {
@@ -68,6 +105,9 @@ export function freshState(): AppState {
     dayCount: 1,
     history: [],
     objectives: defaultObjectives(),
+    managers: {},
+    moneyHeld: [],
+    clientProfiles: {},
   };
 }
 
@@ -381,6 +421,175 @@ export function setObjectives(state: AppState, patch: Partial<Objectives>): AppS
   return st;
 }
 
+// ── CEO Office → Managers (the existing color groups, not a new entity) ──
+export function managerOf(state: AppState, hex: string): ManagerMeta {
+  return state.managers?.[hex] ?? { name: PACKAGE_COLORS.find((p) => p.hex === hex)?.name ?? "Custom", splitPct: 0 };
+}
+export function setManagerSplit(state: AppState, hex: string, pct: number): AppState {
+  const st = clone(state);
+  if (!st.managers) st.managers = {};
+  st.managers[hex] = { ...managerOf(st, hex), splitPct: Math.max(0, Math.min(100, pct || 0)) };
+  return st;
+}
+export function setManagerName(state: AppState, hex: string, name: string): AppState {
+  const st = clone(state);
+  if (!st.managers) st.managers = {};
+  const fallback = PACKAGE_COLORS.find((p) => p.hex === hex)?.name ?? "Custom";
+  st.managers[hex] = { ...managerOf(st, hex), name: name.trim() || fallback };
+  return st;
+}
+
+// ── CEO Office → Money Held (a flat ledger, independent of trading calc) ─
+export function addMoneyHeld(state: AppState, entry: Omit<MoneyHeldEntry, "id">, id?: string): AppState {
+  const st = clone(state);
+  if (!st.moneyHeld) st.moneyHeld = [];
+  st.moneyHeld.push({ ...entry, id: id ?? genId() });
+  return st;
+}
+export function updateMoneyHeld(state: AppState, id: string, patch: Partial<MoneyHeldEntry>): AppState {
+  const st = clone(state);
+  const idx = (st.moneyHeld || []).findIndex((e) => e.id === id);
+  if (idx < 0) return st;
+  st.moneyHeld[idx] = { ...st.moneyHeld[idx], ...patch, id };
+  return st;
+}
+export function deleteMoneyHeld(state: AppState, id: string): AppState {
+  const st = clone(state);
+  st.moneyHeld = (st.moneyHeld || []).filter((e) => e.id !== id);
+  return st;
+}
+// Settlements are an append-only history — no update/remove, matching a
+// ledger/audit-trail model. Status is derived from this list (see stats.ts),
+// never stored, so it can't drift out of sync.
+export function addSettlement(
+  state: AppState,
+  entryId: string,
+  settlement: Omit<Settlement, "id">,
+  id?: string
+): AppState {
+  const st = clone(state);
+  const idx = (st.moneyHeld || []).findIndex((e) => e.id === entryId);
+  if (idx < 0) return st;
+  st.moneyHeld[idx] = {
+    ...st.moneyHeld[idx],
+    settlements: [...st.moneyHeld[idx].settlements, { ...settlement, id: id ?? genId() }],
+  };
+  return st;
+}
+
+// ── CEO Office → Clients (pure metadata, never read by trading logic) ───
+export function clientProfileOf(state: AppState, cluster: number): ClientProfile {
+  return state.clientProfiles?.[cluster] ?? defaultClientProfile();
+}
+export function setClientProfileField(
+  state: AppState,
+  cluster: number,
+  patch: Partial<Pick<ClientProfile, "firstName" | "familyName" | "address" | "vpsLocation">>
+): AppState {
+  const st = clone(state);
+  if (!st.clientProfiles) st.clientProfiles = {};
+  st.clientProfiles[cluster] = { ...clientProfileOf(st, cluster), ...patch };
+  return st;
+}
+export function setVpsInfo(state: AppState, cluster: number, patch: Partial<VpsInfo>): AppState {
+  const st = clone(state);
+  if (!st.clientProfiles) st.clientProfiles = {};
+  const profile = clientProfileOf(st, cluster);
+  st.clientProfiles[cluster] = { ...profile, vpsInfo: { ...profile.vpsInfo, ...patch } };
+  return st;
+}
+export function addAppLogin(state: AppState, cluster: number, login: Omit<AppLogin, "id">, id?: string): AppState {
+  const st = clone(state);
+  if (!st.clientProfiles) st.clientProfiles = {};
+  const profile = clientProfileOf(st, cluster);
+  st.clientProfiles[cluster] = { ...profile, appLogins: [...profile.appLogins, { ...login, id: id ?? genId() }] };
+  return st;
+}
+export function updateAppLogin(state: AppState, cluster: number, id: string, patch: Partial<AppLogin>): AppState {
+  const st = clone(state);
+  if (!st.clientProfiles) st.clientProfiles = {};
+  const profile = clientProfileOf(st, cluster);
+  st.clientProfiles[cluster] = {
+    ...profile,
+    appLogins: profile.appLogins.map((l) => (l.id === id ? { ...l, ...patch, id } : l)),
+  };
+  return st;
+}
+export function removeAppLogin(state: AppState, cluster: number, id: string): AppState {
+  const st = clone(state);
+  if (!st.clientProfiles) st.clientProfiles = {};
+  const profile = clientProfileOf(st, cluster);
+  st.clientProfiles[cluster] = { ...profile, appLogins: profile.appLogins.filter((l) => l.id !== id) };
+  return st;
+}
+export function addPaymentMethod(state: AppState, cluster: number, pm: Omit<PaymentMethod, "id">, id?: string): AppState {
+  const st = clone(state);
+  if (!st.clientProfiles) st.clientProfiles = {};
+  const profile = clientProfileOf(st, cluster);
+  st.clientProfiles[cluster] = {
+    ...profile,
+    paymentMethods: [...profile.paymentMethods, { ...pm, id: id ?? genId() }],
+  };
+  return st;
+}
+export function updatePaymentMethod(state: AppState, cluster: number, id: string, patch: Partial<PaymentMethod>): AppState {
+  const st = clone(state);
+  if (!st.clientProfiles) st.clientProfiles = {};
+  const profile = clientProfileOf(st, cluster);
+  st.clientProfiles[cluster] = {
+    ...profile,
+    paymentMethods: profile.paymentMethods.map((m) => (m.id === id ? { ...m, ...patch, id } : m)),
+  };
+  return st;
+}
+export function removePaymentMethod(state: AppState, cluster: number, id: string): AppState {
+  const st = clone(state);
+  if (!st.clientProfiles) st.clientProfiles = {};
+  const profile = clientProfileOf(st, cluster);
+  st.clientProfiles[cluster] = { ...profile, paymentMethods: profile.paymentMethods.filter((m) => m.id !== id) };
+  return st;
+}
+export function addWithdrawalMethod(
+  state: AppState,
+  cluster: number,
+  wm: Omit<WithdrawalMethod, "id">,
+  id?: string
+): AppState {
+  const st = clone(state);
+  if (!st.clientProfiles) st.clientProfiles = {};
+  const profile = clientProfileOf(st, cluster);
+  st.clientProfiles[cluster] = {
+    ...profile,
+    withdrawalMethods: [...profile.withdrawalMethods, { ...wm, id: id ?? genId() }],
+  };
+  return st;
+}
+export function updateWithdrawalMethod(
+  state: AppState,
+  cluster: number,
+  id: string,
+  patch: Partial<WithdrawalMethod>
+): AppState {
+  const st = clone(state);
+  if (!st.clientProfiles) st.clientProfiles = {};
+  const profile = clientProfileOf(st, cluster);
+  st.clientProfiles[cluster] = {
+    ...profile,
+    withdrawalMethods: profile.withdrawalMethods.map((m) => (m.id === id ? { ...m, ...patch, id } : m)),
+  };
+  return st;
+}
+export function removeWithdrawalMethod(state: AppState, cluster: number, id: string): AppState {
+  const st = clone(state);
+  if (!st.clientProfiles) st.clientProfiles = {};
+  const profile = clientProfileOf(st, cluster);
+  st.clientProfiles[cluster] = {
+    ...profile,
+    withdrawalMethods: profile.withdrawalMethods.filter((m) => m.id !== id),
+  };
+  return st;
+}
+
 // ── Import (reads spotdesk_*.json backups) ───────────────────────────
 export function normalizeImport(data: any): AppState {
   if (!data || typeof data !== "object" || !data.spots || !data.history)
@@ -402,6 +611,45 @@ export function normalizeImport(data: any): AppState {
   if (!st.todayLog) st.todayLog = [];
   if (st.dayCount == null) st.dayCount = 1;
   if (!st.objectives) st.objectives = defaultObjectives();
+  if (!st.managers) st.managers = {};
+  if (!st.clientProfiles) st.clientProfiles = {};
+
+  // Client profiles: migrate the old free-text vpsInfo string into the
+  // structured object (no data to preserve — the field held nothing before
+  // this schema existed), backfill withdrawalMethods, and default any
+  // untyped payment method (created before "type" existed) to "other".
+  Object.keys(st.clientProfiles).forEach((c) => {
+    const p: any = st.clientProfiles[c];
+    if (typeof p.vpsInfo === "string" || !p.vpsInfo) p.vpsInfo = defaultVpsInfo();
+    if (!p.withdrawalMethods) p.withdrawalMethods = [];
+    if (!p.paymentMethods) p.paymentMethods = [];
+    p.paymentMethods.forEach((pm: any) => {
+      if (!pm.type) pm.type = "other";
+    });
+  });
+
+  // Money Held: migrate the old flat direction/targetType+targetKey/
+  // dateSettled shape into the new 4-type ledger + settlement history.
+  if (!st.moneyHeld) st.moneyHeld = [];
+  st.moneyHeld = st.moneyHeld.map((e: any) => {
+    if (e.itemType) return e; // already the new shape
+    const counterparty =
+      e.targetType && e.targetKey != null ? { type: e.targetType, key: String(e.targetKey) } : { type: "custom" as const };
+    const settlements: Settlement[] = e.dateSettled
+      ? [{ id: genId(), date: e.dateSettled, amount: e.amount, isFull: true, note: "migrated" }]
+      : [];
+    return {
+      id: e.id,
+      itemType: e.direction === "owed_by_me" ? "owed_by_me" : "owed_to_me",
+      counterparty,
+      amount: e.amount,
+      currency: "USD",
+      purpose: e.note || "",
+      dateIssued: e.dateIssued,
+      settlements,
+    };
+  });
+
   return st;
 }
 

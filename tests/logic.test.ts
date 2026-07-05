@@ -15,8 +15,28 @@ import {
   deleteLog,
   editHistoryDay,
   setObjectives,
+  colorOf,
+  managerOf,
+  setManagerSplit,
+  setManagerName,
+  addMoneyHeld,
+  updateMoneyHeld,
+  deleteMoneyHeld,
+  addSettlement,
+  clientProfileOf,
+  setClientProfileField,
+  setVpsInfo,
+  addAppLogin,
+  updateAppLogin,
+  removeAppLogin,
+  addPaymentMethod,
+  updatePaymentMethod,
+  removePaymentMethod,
+  addWithdrawalMethod,
+  updateWithdrawalMethod,
+  removeWithdrawalMethod,
 } from "../src/lib/logic";
-import { computeTopStats, equityPoints, periodTotals } from "../src/lib/stats";
+import { computeTopStats, equityPoints, periodTotals, managerSummaries, moneyHeldRemaining, moneyHeldStatus } from "../src/lib/stats";
 
 let pass = 0;
 function check(name: string, fn: () => void) {
@@ -206,6 +226,155 @@ check("periodTotals: today/week/month/allTime sum archived + live totals", () =>
   assert.equal(p.allTime, 27 + 620);
 });
 
+check("setManagerSplit/setManagerName: roundtrip, clamped 0-100, defaults from palette", () => {
+  let st = freshState();
+  const hex = colorOf(st, 1);
+  assert.equal(managerOf(st, hex).name, "Teal");
+  assert.equal(managerOf(st, hex).splitPct, 0);
+  st = setManagerSplit(st, hex, 150);
+  assert.equal(st.managers[hex].splitPct, 100); // clamped
+  st = setManagerSplit(st, hex, -10);
+  assert.equal(st.managers[hex].splitPct, 0); // clamped
+  st = setManagerSplit(st, hex, 25);
+  st = setManagerName(st, hex, "Alex");
+  assert.equal(st.managers[hex].name, "Alex");
+  assert.equal(st.managers[hex].splitPct, 25); // renaming doesn't clobber split
+});
+
+check("Money Held: add/update/delete roundtrip", () => {
+  let st = freshState();
+  st = addMoneyHeld(
+    st,
+    {
+      itemType: "owed_to_me",
+      counterparty: { type: "client", key: "1" },
+      amount: 500,
+      currency: "USD",
+      purpose: "loan",
+      dateIssued: "2026-07-01",
+      settlements: [],
+    },
+    "mh1"
+  );
+  assert.equal(st.moneyHeld.length, 1);
+  assert.equal(st.moneyHeld[0].id, "mh1");
+  st = updateMoneyHeld(st, "mh1", { purpose: "loan (updated)" });
+  assert.equal(st.moneyHeld[0].purpose, "loan (updated)");
+  assert.equal(st.moneyHeld[0].amount, 500); // untouched by the patch
+  st = deleteMoneyHeld(st, "mh1");
+  assert.equal(st.moneyHeld.length, 0);
+});
+
+check("Money Held: settlements drive computed status (open/partial/settled)", () => {
+  let st = freshState();
+  st = addMoneyHeld(
+    st,
+    {
+      itemType: "they_hold_for_me",
+      counterparty: { type: "custom", customName: "Sam" },
+      amount: 1000,
+      currency: "USD",
+      purpose: "liquidity routing",
+      dateIssued: "2026-07-01",
+      settlements: [],
+    },
+    "mh2"
+  );
+  let entry = st.moneyHeld[0];
+  assert.equal(moneyHeldRemaining(entry), 1000);
+  assert.equal(moneyHeldStatus(entry), "open");
+
+  st = addSettlement(st, "mh2", { date: "2026-07-02", amount: 400, isFull: false, note: "first chunk" });
+  entry = st.moneyHeld[0];
+  assert.equal(moneyHeldRemaining(entry), 600);
+  assert.equal(moneyHeldStatus(entry), "partially_settled");
+
+  st = addSettlement(st, "mh2", { date: "2026-07-05", amount: 600, isFull: true, note: "rest", destination: "bank transfer" });
+  entry = st.moneyHeld[0];
+  assert.equal(moneyHeldRemaining(entry), 0);
+  assert.equal(moneyHeldStatus(entry), "settled");
+  assert.equal(entry.settlements.length, 2);
+});
+
+check("Client profile: field set + appLogin/paymentMethod CRUD, other clusters untouched", () => {
+  let st = freshState();
+  st = setClientProfileField(st, 2, { firstName: "Jane", familyName: "Doe" });
+  assert.equal(st.clientProfiles["2"].firstName, "Jane");
+  st = addAppLogin(st, 2, { label: "MT5", username: "u1", password: "p1" }, "login1");
+  assert.equal(st.clientProfiles["2"].appLogins.length, 1);
+  st = updateAppLogin(st, 2, "login1", { password: "p2" });
+  assert.equal(st.clientProfiles["2"].appLogins[0].password, "p2");
+  assert.equal(st.clientProfiles["2"].appLogins[0].username, "u1"); // untouched
+  st = addPaymentMethod(st, 2, { type: "crypto", label: "USDT", details: "addr" }, "pm1");
+  assert.equal(st.clientProfiles["2"].paymentMethods.length, 1);
+  st = removePaymentMethod(st, 2, "pm1");
+  assert.equal(st.clientProfiles["2"].paymentMethods.length, 0);
+  st = removeAppLogin(st, 2, "login1");
+  assert.equal(st.clientProfiles["2"].appLogins.length, 0);
+  assert.deepEqual(clientProfileOf(st, 3), {
+    firstName: "",
+    familyName: "",
+    address: "",
+    vpsLocation: "",
+    vpsInfo: { ipAddress: "", username: "", password: "" },
+    paymentMethods: [],
+    withdrawalMethods: [],
+    appLogins: [],
+  });
+});
+
+check("setVpsInfo: merges a partial patch without touching other fields", () => {
+  let st = freshState();
+  st = setVpsInfo(st, 4, { ipAddress: "1.2.3.4" });
+  assert.equal(st.clientProfiles["4"].vpsInfo.ipAddress, "1.2.3.4");
+  assert.equal(st.clientProfiles["4"].vpsInfo.username, "");
+  st = setVpsInfo(st, 4, { username: "admin", password: "hunter2" });
+  assert.equal(st.clientProfiles["4"].vpsInfo.ipAddress, "1.2.3.4"); // survives
+  assert.equal(st.clientProfiles["4"].vpsInfo.username, "admin");
+  assert.equal(st.clientProfiles["4"].vpsInfo.password, "hunter2");
+});
+
+check("Payment method: card type carries card fields + optional linked wallet, no CVV field exists", () => {
+  let st = freshState();
+  st = addPaymentMethod(
+    st,
+    5,
+    { type: "card", label: "Visa", details: "", cardNumber: "4242", cardExpiry: "12/29", cardholderName: "J Doe" },
+    "card1"
+  );
+  const pm: any = st.clientProfiles["5"].paymentMethods[0];
+  assert.equal(pm.cardNumber, "4242");
+  assert.equal(pm.cardholderName, "J Doe");
+  assert.ok(!("cvv" in pm) && !("cardCvv" in pm)); // CVV is never stored
+  st = updatePaymentMethod(st, 5, "card1", { linkedWallet: { network: "USDT TRC20", address: "Txyz" } });
+  assert.equal(st.clientProfiles["5"].paymentMethods[0].linkedWallet?.network, "USDT TRC20");
+});
+
+check("Withdrawal method: add/update/remove roundtrip", () => {
+  let st = freshState();
+  st = addWithdrawalMethod(st, 6, { type: "iban", label: "Main bank", iban: "DE89...", bankName: "N26" }, "wm1");
+  assert.equal(st.clientProfiles["6"].withdrawalMethods.length, 1);
+  st = updateWithdrawalMethod(st, 6, "wm1", { bankName: "Revolut" });
+  assert.equal(st.clientProfiles["6"].withdrawalMethods[0].bankName, "Revolut");
+  assert.equal(st.clientProfiles["6"].withdrawalMethods[0].iban, "DE89..."); // untouched
+  st = removeWithdrawalMethod(st, 6, "wm1");
+  assert.equal(st.clientProfiles["6"].withdrawalMethods.length, 0);
+});
+
+check("managerSummaries: capitalInvested/allTimePL/weeklyOwed math", () => {
+  let st = freshState();
+  const hex = colorOf(st, 1);
+  st = setDaySingle(st, "1-1", 3, null, null);
+  st = logOutcomeSingle(st, "1-1", 3, "blew", null, null, 700); // +27, frees 1-1
+  st = rollDay(st, "2026-07-01T12:00:00.000Z"); // archives day1 total=27
+  st = setDaySingle(st, "1-2", 5, null, null); // occupied again
+  st = setManagerSplit(st, hex, 50);
+  const teal = managerSummaries(st).find((m) => m.hex === hex)!;
+  assert.equal(teal.allTimePL, 27);
+  assert.ok(teal.capitalInvested > 0);
+  assert.equal(teal.weeklyOwed, (teal.weekNet * 50) / 100);
+});
+
 check("Import spotdesk_day4_repaired.json → day 4, 28 live, 20 named clusters, colors, sheets", () => {
   const raw = JSON.parse(readFileSync(new URL("./fixture_day4.json", import.meta.url), "utf8"));
   const st = normalizeImport(raw);
@@ -236,6 +405,46 @@ check("Import backfills missing objectives for older backups", () => {
   assert.ok(!("objectives" in raw)); // confirms this fixture predates the field
   const st = normalizeImport(raw);
   assert.deepEqual(st.objectives, { dailyTarget: 0, weeklyTarget: 0, monthlyTarget: 0, maxAccounts: 0, notes: "" });
+});
+
+check("Import backfills missing managers/moneyHeld/clientProfiles for older backups", () => {
+  const raw = JSON.parse(readFileSync(new URL("./fixture_day4.json", import.meta.url), "utf8"));
+  assert.ok(!("managers" in raw) && !("moneyHeld" in raw) && !("clientProfiles" in raw));
+  const st = normalizeImport(raw);
+  assert.deepEqual(st.managers, {});
+  assert.deepEqual(st.moneyHeld, []);
+  assert.deepEqual(st.clientProfiles, {});
+});
+
+check("Import migrates the old flat Money Held shape into the new ledger model", () => {
+  const raw = JSON.parse(readFileSync(new URL("./fixture_day4.json", import.meta.url), "utf8"));
+  raw.moneyHeld = [
+    { id: "old1", targetType: "client", targetKey: "1", amount: 300, direction: "owed_by_me", note: "advance", dateIssued: "2026-07-01", dateSettled: null },
+    { id: "old2", targetType: "manager", targetKey: "#00e2a0", amount: 200, direction: "owed_to_me", note: "split", dateIssued: "2026-07-01", dateSettled: "2026-07-04" },
+  ];
+  const st = normalizeImport(raw);
+  const [a, b] = st.moneyHeld;
+  assert.equal(a.itemType, "owed_by_me");
+  assert.deepEqual(a.counterparty, { type: "client", key: "1" });
+  assert.equal(a.settlements.length, 0);
+  assert.equal(moneyHeldStatus(a), "open");
+  assert.equal(b.itemType, "owed_to_me");
+  assert.deepEqual(b.counterparty, { type: "manager", key: "#00e2a0" });
+  assert.equal(b.settlements.length, 1);
+  assert.equal(b.settlements[0].isFull, true);
+  assert.equal(moneyHeldStatus(b), "settled");
+});
+
+check("Import migrates old-shape client profiles: string vpsInfo, untyped payment methods", () => {
+  const raw = JSON.parse(readFileSync(new URL("./fixture_day4.json", import.meta.url), "utf8"));
+  raw.clientProfiles = {
+    "1": { firstName: "Old", familyName: "Data", address: "", vpsLocation: "", vpsInfo: "1.2.3.4 / admin / pw", paymentMethods: [{ id: "pm1", label: "USDT", details: "addr" }], appLogins: [] },
+  };
+  const st = normalizeImport(raw);
+  const profile = st.clientProfiles["1"];
+  assert.deepEqual(profile.vpsInfo, { ipAddress: "", username: "", password: "" });
+  assert.equal(profile.paymentMethods[0].type, "other");
+  assert.deepEqual(profile.withdrawalMethods, []);
 });
 
 console.log(`\nAll ${pass} checks passed.`);

@@ -1,9 +1,9 @@
 // Derived, read-only stats — mirrors the math inside the reference render().
 
 import { LADDER, PACKAGE_COLORS, type Zone } from "./ladder";
-import { clusterOf, colorOf, fwdEV, gridDims, netOfLog, PhaseFilter } from "./logic";
+import { clusterOf, colorOf, fwdEV, gridDims, managerOf, netOfLog, PhaseFilter } from "./logic";
 import { N_CLUSTERS, ACCTS_PER_CLUSTER } from "./ladder";
-import type { AppState, LogEntry } from "./types";
+import type { AppState, LogEntry, MoneyHeldEntry } from "./types";
 
 export interface TopStats {
   deployed: number;
@@ -216,4 +216,79 @@ export function packageGroups(state: AppState): PackageGroup[] {
       week: g.week,
     };
   });
+}
+
+// CEO Office → Managers. Managers ARE the color groups above — this reuses
+// packageGroups' today/week (identical filtering, so it stays consistent
+// with the Trading Floor Packages chart) and adds the all-time/capital/
+// expected-payout/split figures that packageGroups doesn't compute.
+export interface ManagerSummary {
+  hex: string;
+  name: string;
+  splitPct: number;
+  clusters: number[];
+  clusterLabels: string;
+  capitalInvested: number;
+  allTimePL: number;
+  expectedPayout: number;
+  weekNet: number;
+  weeklyOwed: number;
+}
+export function managerSummaries(state: AppState): ManagerSummary[] {
+  const groups = packageGroups(state);
+  const { nAccts } = gridDims(state);
+
+  return groups.map((g) => {
+    let capitalInvested = 0;
+    let expectedPayout = 0;
+    g.clusters.forEach((c) => {
+      for (let a = 1; a <= nAccts; a++) {
+        const sp = state.spots[`${c}-${a}`];
+        if (sp && sp.day >= 1) {
+          capitalInvested += (sp.cost || 0) + (sp.extra || 0) || LADDER[sp.day].inv;
+          expectedPayout += fwdEV(sp.day);
+        }
+      }
+    });
+
+    let allTimePL = 0;
+    state.history.forEach((d) => {
+      (d.log || []).forEach((w) => {
+        if (colorOf(state, clusterOf(w.id)) === g.hex) allTimePL += netOfLog(w);
+      });
+    });
+    state.todayLog.forEach((w) => {
+      if (colorOf(state, clusterOf(w.id)) === g.hex) allTimePL += netOfLog(w);
+    });
+
+    const meta = managerOf(state, g.hex);
+    return {
+      hex: g.hex,
+      name: meta.name || g.name,
+      splitPct: meta.splitPct || 0,
+      clusters: g.clusters,
+      clusterLabels: g.clusterLabels,
+      capitalInvested,
+      allTimePL,
+      expectedPayout,
+      weekNet: g.week,
+      weeklyOwed: (g.week * (meta.splitPct || 0)) / 100,
+    };
+  });
+}
+
+// Money Held → status is DERIVED from the settlement history, never stored,
+// so it can never disagree with the numbers underneath it.
+export type MoneyHeldStatus = "open" | "partially_settled" | "settled";
+
+export function moneyHeldRemaining(entry: MoneyHeldEntry): number {
+  const settled = entry.settlements.reduce((sum, s) => sum + s.amount, 0);
+  return entry.amount - settled;
+}
+
+export function moneyHeldStatus(entry: MoneyHeldEntry): MoneyHeldStatus {
+  const remaining = moneyHeldRemaining(entry);
+  if (remaining <= 0) return "settled";
+  if (entry.settlements.length > 0) return "partially_settled";
+  return "open";
 }

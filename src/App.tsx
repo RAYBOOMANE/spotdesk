@@ -13,6 +13,8 @@ import { NowTradingView } from "@/views/NowTradingView";
 import { ObjectivesView } from "@/views/ObjectivesView";
 import { CeoOverviewView } from "@/views/CeoOverviewView";
 import { CeoClientsView } from "@/views/CeoClientsView";
+import { ManagersView } from "@/views/ManagersView";
+import { MoneyHeldView } from "@/views/MoneyHeldView";
 import { LogModal } from "@/components/modals/LogModal";
 import { MultiLogModal } from "@/components/modals/MultiLogModal";
 import { DayDetailModal } from "@/components/modals/DayDetailModal";
@@ -83,12 +85,8 @@ export default function App() {
 
         {department === "ceo-office" && tab === "overview" && <CeoOverviewView />}
         {department === "ceo-office" && tab === "clients" && <CeoClientsView />}
-        {department === "ceo-office" && tab === "managers" && (
-          <PlaceholderView title="Managers" description="Manager roster, assigned clients, and profit splits." />
-        )}
-        {department === "ceo-office" && tab === "money-held" && (
-          <PlaceholderView title="Money Held" description="Capital held on behalf of clients and managers." />
-        )}
+        {department === "ceo-office" && tab === "managers" && <ManagersView />}
+        {department === "ceo-office" && tab === "money-held" && <MoneyHeldView />}
         {department === "ceo-office" && tab === "objectives" && <ObjectivesView />}
         {department === "accounting" && (
           <PlaceholderView
