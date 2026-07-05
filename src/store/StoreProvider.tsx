@@ -13,8 +13,9 @@ import type {
   WithdrawalMethod,
 } from "@/lib/types";
 import * as L from "@/lib/logic";
-import { flushSave, loadState, scheduleSave, snapshotState, type SaveStatus } from "@/lib/persistence";
-import { autoBackup } from "@/lib/backup";
+import type { SaveStatus } from "@/lib/persistence";
+import { flushSave, scheduleSave } from "@/lib/dataService/autosaveService";
+import { getBackupService, getStorageAdapter } from "@/lib/dataService";
 
 interface Store {
   state: AppState;
@@ -79,7 +80,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     (async () => {
-      const loaded = await loadState();
+      const loaded = await getStorageAdapter().loadState();
       setState(loaded ?? L.freshState());
       hydrated.current = true;
     })();
@@ -132,8 +133,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       // compute next synchronously so we can snapshot + auto-export it
       const next = L.rollDay(state);
       setState(next);
-      await snapshotState(`new-day-${next.dayCount}`, next);
-      await autoBackup(next); // auto JSON backup on every New Day
+      await getStorageAdapter().saveSnapshot(`new-day-${next.dayCount}`, next);
+      await getBackupService().autoBackup(next); // auto JSON backup on every New Day
     },
     editHistoryDay: (idx, f) => apply((s) => L.editHistoryDay(s, idx, f)),
     renameCluster: (c, name) => apply((s) => L.renameCluster(s, c, name)),

@@ -2,8 +2,9 @@ import { useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { useStore } from "@/store/StoreProvider";
 import { useDialogs } from "./ConfirmProvider";
-import { exportBackup, importBackupViaDialog, importFromText } from "@/lib/backup";
-import { isTauri } from "@/lib/persistence";
+import { importFromText } from "@/lib/backup";
+import { isTauri } from "@/lib/dataService/platform";
+import { getBackupService } from "@/lib/dataService";
 import { computeTopStats } from "@/lib/stats";
 
 export function FooterActions() {
@@ -26,14 +27,14 @@ export function FooterActions() {
   };
 
   const doExport = async () => {
-    const path = await exportBackup(store.state);
+    const path = await getBackupService().exportBackup(store.state);
     if (path) await dialogs.alert(`Backup saved:\n${path}`);
   };
 
   const doImport = async () => {
     if (isTauri) {
       try {
-        const st = await importBackupViaDialog();
+        const st = await getBackupService().importBackupViaDialog();
         if (!st) return;
         const ok = await dialogs.confirm(
           `Import backup?\n\nDay ${st.dayCount}, ${Object.values(st.spots).filter((s) => s.day >= 1).length} live accounts, ${
