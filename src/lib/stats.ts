@@ -3,7 +3,7 @@
 import { LADDER, PACKAGE_COLORS, type Zone } from "./ladder";
 import { clusterOf, colorOf, fwdEV, gridDims, managerOf, netOfLog, PhaseFilter } from "./logic";
 import { N_CLUSTERS, ACCTS_PER_CLUSTER } from "./ladder";
-import type { AppState, LogEntry, MoneyHeldEntry } from "./types";
+import type { AppState, LogEntry, MoneyHeldEntry, OutcomeType } from "./types";
 
 export interface TopStats {
   deployed: number;
@@ -291,4 +291,65 @@ export function moneyHeldStatus(entry: MoneyHeldEntry): MoneyHeldStatus {
   if (remaining <= 0) return "settled";
   if (entry.settlements.length > 0) return "partially_settled";
   return "open";
+}
+
+// Accounting → Ledger. Every LogEntry that has ever been recorded, across
+// today and every archived day — built entirely from existing todayLog/
+// history[].log, nothing new is stored. "invested" reuses the sunk (blew) /
+// invested (payout) field already recorded on the entry at the time it was
+// logged; "net" reuses the same netOfLog already used everywhere else
+// (packageGroups, managerSummaries). No new outcome types exist beyond
+// "blew"/"payout" — the data model has never recorded "investment" as its
+// own ledger event (Set Day doesn't log an entry), so there is nothing to
+// show for it here without inventing data that was never captured.
+export interface LedgerRow {
+  key: string;
+  isoDate: string; // YYYY-MM-DD, used for date-range filtering/sorting
+  dateLabel: string;
+  time: string;
+  sourceLabel: string; // "Today" or "Day N"
+  id: string;
+  cluster: number;
+  clientName: string;
+  color: string;
+  type: OutcomeType;
+  amount: number;
+  invested: number;
+  net: number;
+}
+
+export function ledgerRows(state: AppState): LedgerRow[] {
+  const rows: LedgerRow[] = [];
+
+  const push = (w: LogEntry, isoDate: string, dateLabel: string, sourceLabel: string) => {
+    const cluster = clusterOf(w.id);
+    rows.push({
+      key: `${sourceLabel}-${w.id}-${w.time}-${rows.length}`,
+      isoDate,
+      dateLabel,
+      time: w.time,
+      sourceLabel,
+      id: w.id,
+      cluster,
+      clientName: state.names && state.names[cluster] ? state.names[cluster] : "C" + cluster,
+      color: colorOf(state, cluster),
+      type: w.type,
+      amount: w.amount,
+      invested: w.type === "blew" ? w.sunk || 0 : w.invested || 0,
+      net: netOfLog(w),
+    });
+  };
+
+  (state.history || []).forEach((d) => {
+    const isoDate = d.date ? d.date.slice(0, 10) : "";
+    const dateLabel = d.date
+      ? new Date(d.date).toLocaleDateString("en-GB", { day: "2-digit", month: "short" })
+      : `Day ${d.day}`;
+    (d.log || []).forEach((w) => push(w, isoDate, dateLabel, `Day ${d.day}`));
+  });
+
+  const todayIso = new Date().toISOString().slice(0, 10);
+  state.todayLog.forEach((w) => push(w, todayIso, "Today", "Today"));
+
+  return rows.reverse(); // newest first
 }
