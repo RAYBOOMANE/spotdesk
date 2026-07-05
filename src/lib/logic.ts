@@ -277,6 +277,45 @@ export function multiOutcome(
   return st;
 }
 
+// ── Copy-trade close-out using EACH account's OWN real invested capital ──
+// Unlike multiOutcome (which applies one uniform cost/extra to every id --
+// the correct, tested behavior for opening several EMPTY slots together at
+// the same benchmark), this is for closing out multiple ALREADY-OCCUPIED
+// accounts together: copy-traded accounts can each carry different
+// accumulated extra investment, so net must be computed per account against
+// its own state.spots[id].cost + extra, never a flat benchmark. Blank gross
+// falls back to that account's own day's LADDER profit (all ids share one
+// day, enforced by selectionError, so this is still uniform across the group).
+export function copyTradeOutcome(
+  state: AppState,
+  ids: string[],
+  type: OutcomeType,
+  grossPerAccountRaw: Maybe,
+  time?: string
+): AppState {
+  const st = clone(state);
+  const now = time ?? nowTime();
+  ids.forEach((id) => {
+    const sp = st.spots[id];
+    if (!sp || sp.day < 1) return;
+    const day = sp.day;
+    const amt = grossPerAccountRaw == null ? LADDER[day].prof : grossPerAccountRaw;
+    const invested = (sp.cost || 0) + (sp.extra || 0);
+    const net = amt - invested;
+    markTraded(st, id);
+    if (type === "blew") {
+      st.todayLog.push({ time: now, id, amount: amt, sunk: invested, profit: net, day, type: "blew" });
+      st.todayProfit += net;
+      st.spots[id] = { day: 0, cost: 0, extra: 0 };
+    } else {
+      st.todayLog.push({ time: now, id, amount: amt, invested, profit: net, day, type: "payout" });
+      st.todayPayouts += net;
+      st.spots[id] = { day, cost: 0, extra: 0 };
+    }
+  });
+  return st;
+}
+
 // ── Delete / undo a logged entry ─────────────────────────────────────
 export function deleteLog(state: AppState, idx: number): AppState {
   const st = clone(state);

@@ -11,11 +11,11 @@ function parseMaybe(v: string): number | null {
   return isNaN(n) ? null : n;
 }
 
-// A dedicated Now Trading copy-trade modal — NOT the shared MultiLogModal
-// (that stays untouched for Clusters). The one difference the user asked
-// for: you type the TOTAL gross across all accounts, not the per-account
-// amount — e.g. blowing 2 accounts at $200 each, you enter 400 once and it's
-// split evenly before being passed to the existing multiOutcome.
+// A dedicated Now Trading copy-trade modal. You type the TOTAL gross across
+// all accounts, not a per-account amount — e.g. blowing 2 accounts at $200
+// each, you enter 400 once and it's split evenly, then applied against each
+// account's OWN real invested capital via copyTradeOutcome (never a flat
+// benchmark — copy-traded accounts can carry different accumulated extra).
 export function NowTradingCopyTradeModal({
   open,
   ids,
@@ -39,7 +39,9 @@ export function NowTradingCopyTradeModal({
   };
 
   const act = (type: "blew" | "payout") => {
-    store.multiOutcome(ids, day, type, null, null, perAccount());
+    // Each account's own real cost+extra, never a flat benchmark -- copy-
+    // traded accounts can carry different accumulated extra investment.
+    store.copyTradeOutcome(ids, type, perAccount());
     setGrossTotal("");
     onClose();
   };

@@ -47,6 +47,7 @@ import {
   setTaskProgressManual,
   resetTaskProgressToAuto,
   taskProgress,
+  copyTradeOutcome,
 } from "../src/lib/logic";
 import {
   computeTopStats,
@@ -746,6 +747,81 @@ check("secretaryTasks 'all' includes everything; 'completed' includes only compl
   const completed = secretaryTasks(st, "completed");
   assert.equal(completed.length, 1);
   assert.equal(completed[0].title, "B");
+});
+
+check("Single-account blow nets against total invested (base cost + extra), not just base cost", () => {
+  let st = freshState();
+  st = setDaySingle(st, "1-1", 1, 95, 60); // base 95 + extra 60 = 155 total invested
+  assert.deepEqual(st.spots["1-1"], { day: 1, cost: 95, extra: 60 });
+  st = logOutcomeSingle(st, "1-1", 1, "blew", 95, 60, 900); // UI passes the account's real stored cost+extra
+  assert.equal(st.todayLog[0].sunk, 155);
+  assert.equal(st.todayProfit, 900 - 155); // 745, NOT 900-95=805
+});
+
+check("copyTradeOutcome nets each account against its OWN real invested capital, not a flat benchmark", () => {
+  let st = freshState();
+  st = setDaySingle(st, "1-1", 3, 95, 60); // 155 total invested
+  st = setDaySingle(st, "1-2", 3, 95, 0); // 95 total invested
+  st = copyTradeOutcome(st, ["1-1", "1-2"], "blew", 200); // same 200 gross per account
+  const logA = st.todayLog.find((l) => l.id === "1-1")!;
+  const logB = st.todayLog.find((l) => l.id === "1-2")!;
+  assert.equal(logA.sunk, 155);
+  assert.equal(logA.profit, 45); // 200-155
+  assert.equal(logB.sunk, 95);
+  assert.equal(logB.profit, 105); // 200-95 -- different net despite the same gross, correctly per-account
+  assert.equal(st.todayProfit, 45 + 105);
+  assert.deepEqual(st.spots["1-1"], { day: 0, cost: 0, extra: 0 });
+  assert.deepEqual(st.spots["1-2"], { day: 0, cost: 0, extra: 0 });
+});
+
+check("copyTradeOutcome payout variant keeps the day, resets cost/extra, nets per account", () => {
+  let st = freshState();
+  st = setDaySingle(st, "2-1", 5, 150, 40); // 190 total invested
+  st = copyTradeOutcome(st, ["2-1"], "payout", 300);
+  const log = st.todayLog[0];
+  assert.equal(log.invested, 190);
+  assert.equal(log.profit, 110); // 300-190
+  assert.equal(st.todayPayouts, 110);
+  assert.deepEqual(st.spots["2-1"], { day: 5, cost: 0, extra: 0 });
+});
+
+check("copyTradeOutcome: blank gross falls back to that day's LADDER profit, still nets against real invested capital", () => {
+  let st = freshState();
+  st = setDaySingle(st, "1-1", 3, 95, 60); // 155 invested
+  st = copyTradeOutcome(st, ["1-1"], "blew", null);
+  assert.equal(st.todayLog[0].amount, LADDER[3].prof);
+  assert.equal(st.todayProfit, LADDER[3].prof - 155);
+});
+
+check("Adding extra investment as a SEPARATE later step (not at initial deploy) still nets against the combined 155 on blow — single account, Now Trading, and copy-trade", () => {
+  // Step 1: deploy at base cost 95 (blank cost -> benchmark), no extra yet.
+  let st = freshState();
+  st = setDaySingle(st, "1-1", 1, null, null);
+  assert.deepEqual(st.spots["1-1"], { day: 1, cost: 95, extra: 0 });
+
+  // Step 2: a SEPARATE, later action adds extra investment 60 on top of the
+  // account's own current extra (exactly how NowTradingCard's +Invest and
+  // MultiLogModal/NowTradingCopyTradeModal's +Invest all do it).
+  const sp = st.spots["1-1"];
+  st = setDaySingle(st, "1-1", sp.day, sp.cost, (sp.extra || 0) + 60);
+  assert.deepEqual(st.spots["1-1"], { day: 1, cost: 95, extra: 60 }); // 155 total invested
+
+  // Step 3: blow, reading the account's CURRENT real state (as every caller does).
+  const sp2 = st.spots["1-1"];
+  st = logOutcomeSingle(st, "1-1", sp2.day, "blew", sp2.cost, sp2.extra, 900);
+  assert.equal(st.todayLog[0].sunk, 155);
+  assert.equal(st.todayProfit, 900 - 155); // 745, NOT 900-95=805
+
+  // Same 3-step sequence through copyTradeOutcome (Now Trading copy-trade /
+  // Clients tab copy-trade both funnel into this one function).
+  let st2 = freshState();
+  st2 = setDaySingle(st2, "2-1", 4, null, null);
+  const spA = st2.spots["2-1"];
+  st2 = setDaySingle(st2, "2-1", spA.day, spA.cost, (spA.extra || 0) + 60);
+  assert.equal(st2.spots["2-1"].cost + st2.spots["2-1"].extra, spA.cost + 60);
+  st2 = copyTradeOutcome(st2, ["2-1"], "blew", 500);
+  assert.equal(st2.todayLog[0].sunk, spA.cost + 60);
+  assert.equal(st2.todayProfit, 500 - (spA.cost + 60));
 });
 
 console.log(`\nAll ${pass} checks passed.`);

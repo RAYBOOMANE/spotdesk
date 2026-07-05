@@ -27,6 +27,7 @@ interface Store {
   freeSpot: (id: string) => void;
   multiSetDay: (ids: string[], day: number, cost: Maybe, extra: Maybe) => void;
   multiOutcome: (ids: string[], day: number, type: OutcomeType, cost: Maybe, extra: Maybe, amount: Maybe) => void;
+  copyTradeOutcome: (ids: string[], type: OutcomeType, grossPerAccount: Maybe) => void;
   multiFree: (ids: string[]) => void;
   deleteLog: (idx: number) => void;
   editTodayLogEntry: (idx: number, patch: L.EditLogEntryFields) => void;
@@ -149,6 +150,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     multiSetDay: (ids, day, cost, extra) => apply((s) => L.multiSetDay(s, ids, day, cost, extra)),
     multiOutcome: (ids, day, type, cost, extra, amount) =>
       apply((s) => L.multiOutcome(s, ids, day, type, cost, extra, amount)),
+    copyTradeOutcome: (ids, type, grossPerAccount) => apply((s) => L.copyTradeOutcome(s, ids, type, grossPerAccount)),
     multiFree: (ids) => apply((s) => L.multiFree(s, ids)),
     deleteLog: (idx) => apply((s) => L.deleteLog(s, idx)),
     editTodayLogEntry: (idx, patch) => apply((s) => L.editTodayLogEntry(s, idx, patch)),
