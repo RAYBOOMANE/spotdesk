@@ -474,3 +474,26 @@ export function allTimeAverages(state: AppState, now: Date = new Date()): AllTim
   const avgDaily = allTime / dayCount;
   return { avgDaily, avgWeekly: avgDaily * 7, avgMonthly: avgDaily * 30, dayCount };
 }
+
+// ── Open Session Capital (formerly "Deployed Today") ──────────────────
+// ALL currently open invested capital: base cost (set the moment an account
+// is deployed, even with no extra) PLUS any extra investment/loss added on
+// top, for EVERY currently occupied account -- not scoped to "touched today"
+// (a plain Set Day with no extra was never marked traded, which is why the
+// old tradedToday-scoped version showed $0 for freshly deployed accounts).
+// Live/derived every call, never accumulated: falls to exactly 0 the moment
+// an account blows (freed) or pays out (cost/extra reset, day kept) -- and
+// deliberately does NOT fall back to the ladder benchmark the way
+// deployedNow's display formula does, since a true payout-reset account must
+// read as $0 here, not its benchmark cost.
+export function openSessionCapital(state: AppState): number {
+  const { nClusters, nAccts } = gridDims(state);
+  let sum = 0;
+  for (let c = 1; c <= nClusters; c++) {
+    for (let a = 1; a <= nAccts; a++) {
+      const sp = state.spots[`${c}-${a}`];
+      if (sp && sp.day >= 1) sum += (sp.cost || 0) + (sp.extra || 0);
+    }
+  }
+  return sum;
+}

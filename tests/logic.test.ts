@@ -61,6 +61,7 @@ import {
   ledgerAuthoritativeTotals,
   secretaryTasks,
   allTimeAverages,
+  openSessionCapital,
 } from "../src/lib/stats";
 
 let pass = 0;
@@ -918,6 +919,57 @@ check("copyTradeOutcome after copyTradeInvest nets against each account's FULL c
   assert.equal(logA.profit, 55); // 200-145, NOT 200-95=105
   assert.equal(logB.sunk, 205);
   assert.equal(logB.profit, -5); // 200-205, NOT 200-155=45
+});
+
+check("openSessionCapital: deploying two fresh accounts (no extra) counts each one's base cost -- $95+$95=$190", () => {
+  let st = freshState();
+  assert.equal(openSessionCapital(st), 0);
+  st = setDaySingle(st, "1-1", 1, null, null); // benchmark deploy, blank extra -- NOT "traded", but still open capital
+  st = setDaySingle(st, "1-2", 1, null, null);
+  assert.equal(openSessionCapital(st), 190);
+});
+
+check("openSessionCapital: adding $60 extra to one of the two deployed accounts -> $250", () => {
+  let st = freshState();
+  st = setDaySingle(st, "1-1", 1, null, null);
+  st = setDaySingle(st, "1-2", 1, null, null);
+  st = setDaySingle(st, "1-1", 1, st.spots["1-1"].cost, 60);
+  assert.equal(openSessionCapital(st), 250); // (95+60) + 95
+});
+
+check("openSessionCapital: blowing one account subtracts its full invested amount, the other remains", () => {
+  let st = freshState();
+  st = setDaySingle(st, "1-1", 1, null, null);
+  st = setDaySingle(st, "1-2", 1, null, null);
+  st = setDaySingle(st, "1-1", 1, st.spots["1-1"].cost, 60);
+  assert.equal(openSessionCapital(st), 250);
+  st = logOutcomeSingle(st, "1-1", 1, "blew", st.spots["1-1"].cost, st.spots["1-1"].extra, 900);
+  assert.equal(openSessionCapital(st), 95); // only account 2's base cost remains
+});
+
+check("openSessionCapital: blowing both accounts -> $0", () => {
+  let st = freshState();
+  st = setDaySingle(st, "1-1", 1, null, null);
+  st = setDaySingle(st, "1-2", 1, null, null);
+  st = logOutcomeSingle(st, "1-1", 1, "blew", null, null, 900);
+  st = logOutcomeSingle(st, "1-2", 1, "blew", null, null, 900);
+  assert.equal(openSessionCapital(st), 0);
+});
+
+check("openSessionCapital falls to 0 after a payout, even though the account stays occupied on the same day", () => {
+  let st = freshState();
+  st = setDaySingle(st, "1-1", 1, 95, 60);
+  st = logOutcomeSingle(st, "1-1", 1, "payout", 95, 60, 900); // keeps day, cost/extra reset to 0
+  assert.equal(st.spots["1-1"].day, 1); // still occupied
+  assert.equal(openSessionCapital(st), 0); // no benchmark fallback -- a true reset reads as exactly $0
+});
+
+check("openSessionCapital sums correctly across multiple accounts after a copy-trade invest", () => {
+  let st = freshState();
+  st = setDaySingle(st, "1-1", 1, null, null);
+  st = setDaySingle(st, "1-2", 1, null, null);
+  st = copyTradeInvest(st, ["1-1", "1-2"], 100); // +50 each
+  assert.equal(openSessionCapital(st), 290); // (95+50) * 2
 });
 
 console.log(`\nAll ${pass} checks passed.`);

@@ -1,5 +1,5 @@
 import { useStore } from "@/store/StoreProvider";
-import { computeTopStats } from "@/lib/stats";
+import { computeTopStats, openSessionCapital } from "@/lib/stats";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
@@ -26,6 +26,7 @@ function Item({
 export function KpiTicker() {
   const { state } = useStore();
   const s = computeTopStats(state);
+  const openSession = openSessionCapital(state);
 
   return (
     <Card className="flex flex-wrap divide-x divide-line px-6 py-5">
@@ -39,9 +40,9 @@ export function KpiTicker() {
       <Item k="Active Past D3 (D4+)" v={s.deepCount} sub="in the deep zone" />
       <Item k="In Second Leg (D8+)" v={s.secondLegCount} sub="past the gateway" />
       <Item
-        k="Deployed Today"
-        v={"$" + Math.round(state.deployedToday || 0).toLocaleString()}
-        sub="new entries today"
+        k="Open Session Capital"
+        v={"$" + Math.round(openSession).toLocaleString()}
+        sub="live — today's open trades only"
       />
       <Item k="Expected Next Outcome" v={"+$" + s.fwdTotal.toFixed(0)} sub="forward EV" />
     </Card>
