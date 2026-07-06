@@ -70,27 +70,27 @@ export function NowTradingCard({
   };
 
   return (
-    <Card className="p-3">
-      <div className="mb-2 flex items-start justify-between gap-1.5">
-        <div className="flex min-w-0 items-start gap-1.5">
+    <Card className="p-3.5">
+      <div className="mb-2.5 flex items-start justify-between gap-2">
+        <div className="flex min-w-0 items-start gap-2">
           <input
             type="checkbox"
             checked={copySelected}
             disabled={!occupied}
             onChange={() => onToggleCopySelect(id)}
-            className="mt-1 h-3 w-3 shrink-0 cursor-pointer accent-ink disabled:cursor-not-allowed"
+            className="mt-1 h-3.5 w-3.5 shrink-0 cursor-pointer accent-ink disabled:cursor-not-allowed"
             title="select for copy trade"
           />
           <div className="min-w-0">
             <div className="flex items-center gap-1.5">
               <span
-                className="h-[7px] w-[7px] shrink-0 rounded-[2px]"
+                className="h-[8px] w-[8px] shrink-0 rounded-[2px]"
                 style={{ background: clientColor }}
                 title="client color"
               />
-              <div className="truncate text-[0.64rem] font-bold text-ink">{name}</div>
+              <div className="truncate text-[0.7rem] font-bold text-ink">{name}</div>
             </div>
-            <div className="font-mono text-[0.55rem] text-dim">
+            <div className="font-mono text-[0.6rem] text-dim">
               C{c}·A{a}
             </div>
           </div>
@@ -100,32 +100,32 @@ export function NowTradingCard({
           className="shrink-0 rounded p-1 text-faint transition-colors hover:bg-panel2 hover:text-ink"
           title="Remove from Now Trading"
         >
-          <X className="h-3 w-3" />
+          <X className="h-3.5 w-3.5" />
         </button>
       </div>
 
       {occupied ? (
-        <div className="mb-2 flex items-center gap-1.5">
+        <div className="mb-2.5 flex items-center gap-1.5">
           <span
-            className="h-[6px] w-[6px] shrink-0 rounded-full bg-invested"
+            className="h-[7px] w-[7px] shrink-0 rounded-full bg-invested"
             style={{ opacity: hasCapitalLimit ? investedOpacity : 0.7 }}
           />
-          <span className="font-mono text-[0.75rem] font-semibold text-ink">D{sp.day}</span>
+          <span className="font-mono text-[0.82rem] font-semibold text-ink">D{sp.day}</span>
           <span
-            className="font-mono text-[0.55rem] text-invested"
+            className="font-mono text-[0.6rem] text-invested"
             style={{ opacity: hasCapitalLimit ? investedOpacity : 0.85 }}
           >
             ${tied.toLocaleString()} invested
           </span>
         </div>
       ) : (
-        <div className="mb-2 font-mono text-[0.55rem] text-faint">free — not yet trading</div>
+        <div className="mb-2.5 font-mono text-[0.6rem] text-faint">free — not yet trading</div>
       )}
 
       <button
         disabled={!occupied}
         onClick={quickBlow}
-        className="mb-1.5 w-full rounded-lg border border-loss/40 px-2 py-[6px] text-[0.58rem] font-bold text-loss transition-colors hover:bg-loss/10 disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-transparent"
+        className="mb-2 w-full rounded-lg border border-loss/40 px-2 py-2 text-[0.64rem] font-bold text-loss transition-colors hover:bg-loss/10 disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-transparent"
       >
         Blew
       </button>
@@ -136,20 +136,20 @@ export function NowTradingCard({
         value={amount}
         placeholder="$ amount"
         onChange={(e) => setAmount(e.target.value)}
-        className="mb-1.5 w-full rounded-lg border border-line bg-panel2 px-2 py-[6px] text-center font-mono text-[0.58rem] text-ink placeholder:text-faint focus:border-line2 focus:outline-none disabled:cursor-not-allowed disabled:opacity-40"
+        className="mb-2 w-full rounded-lg border border-line bg-panel2 px-2 py-2 text-center font-mono text-[0.64rem] text-ink placeholder:text-faint focus:border-line2 focus:outline-none disabled:cursor-not-allowed disabled:opacity-40"
       />
-      <div className="grid grid-cols-2 gap-1.5">
+      <div className="grid grid-cols-2 gap-2">
         <button
           disabled={!occupied}
           onClick={submitPayout}
-          className="rounded-lg border border-profit/40 px-2 py-[6px] text-[0.58rem] font-bold text-profit transition-colors hover:bg-profit/10 disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-transparent"
+          className="rounded-lg border border-profit/40 px-2 py-2 text-[0.64rem] font-bold text-profit transition-colors hover:bg-profit/10 disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-transparent"
         >
           Payout
         </button>
         <button
           disabled={!occupied}
           onClick={submitInvest}
-          className="rounded-lg border border-invested/40 px-2 py-[6px] text-[0.58rem] font-bold text-invested transition-colors hover:bg-invested/10 disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-transparent"
+          className="rounded-lg border border-invested/40 px-2 py-2 text-[0.64rem] font-bold text-invested transition-colors hover:bg-invested/10 disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-transparent"
         >
           + Invest
         </button>
@@ -157,7 +157,7 @@ export function NowTradingCard({
 
       <button
         onClick={() => onOpen(id)}
-        className="mt-1.5 w-full rounded-lg border border-line bg-panel2 px-2 py-[6px] text-[0.56rem] font-medium text-dim transition-colors hover:border-line2 hover:text-ink"
+        className="mt-2 w-full rounded-lg border border-line bg-panel2 px-2 py-2 text-[0.62rem] font-medium text-dim transition-colors hover:border-line2 hover:text-ink"
       >
         Open full log
       </button>

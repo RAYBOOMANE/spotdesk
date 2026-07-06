@@ -11,4 +11,4 @@ export function getBackupService(): BackupService {
   return localBackupService;
 }
 
-export type { BackupService, SaveResult, StateStorageAdapter } from "./types";
+export type { BackupService, SaveResult, StateStorageAdapter, SnapshotMeta } from "./types";

@@ -71,19 +71,18 @@ export function MultiLogModal({
   const closeTogether = (type: "blew" | "payout") =>
     act(() => store.copyTradeOutcome(ids, type, perAccount()));
 
+  // ONE atomic copyTradeInvest call, not a loop of separate setDaySingle
+  // calls — each of those now flushes to disk immediately, and React
+  // collapses multiple synchronous setState calls from a component-level
+  // loop down to just the last one, silently dropping every earlier
+  // account's update. Same shared calculation path as Now Trading's modal.
   const investAll = () => {
     const total = parseMaybe(grossTotal);
     if (!grossTotal.trim() || total == null || total <= 0) {
       void dialogs.alert("Enter an amount to add to these accounts first.");
       return;
     }
-    const perAccountAmt = total / n;
-    ids.forEach((id) => {
-      const sp = state.spots[id];
-      if (!sp) return;
-      store.setDaySingle(id, sp.day, sp.cost, (sp.extra || 0) + perAccountAmt);
-    });
-    act(() => {});
+    act(() => store.copyTradeInvest(ids, total));
   };
 
   const preview = perAccount();

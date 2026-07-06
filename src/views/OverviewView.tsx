@@ -17,9 +17,6 @@ export function OverviewView({ onCapacityClick }: { onCapacityClick: () => void 
       <HeroMetric />
       <KpiTicker />
 
-      {/* Dominant chart */}
-      <IntradayPnlChart />
-
       {/* Supporting analytics */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <EquityCurve />
@@ -27,6 +24,9 @@ export function OverviewView({ onCapacityClick }: { onCapacityClick: () => void 
         <DeployedCapitalChart />
         <CapacityGauge onClick={onCapacityClick} />
       </div>
+
+      {/* Session P&L */}
+      <IntradayPnlChart />
     </div>
   );
 }

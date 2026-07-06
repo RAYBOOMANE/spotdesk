@@ -20,9 +20,9 @@ export function PnlHistory({ onOpenDay }: { onOpenDay: (idx: number) => void }) 
 
   return (
     <Card className="p-4">
-      <div className="mb-3 flex h-[132px] items-end gap-1 overflow-x-auto pb-1">
+      <div className="mb-3 flex h-[150px] items-end gap-1 overflow-x-auto pb-1">
         {hist.map((d, idx) => {
-          const h = Math.max(4, (Math.abs(d.total) / maxAbs) * 100);
+          const h = Math.max(6, (Math.abs(d.total) / maxAbs) * 100);
           return (
             <button
               key={idx}
@@ -42,7 +42,7 @@ export function PnlHistory({ onOpenDay }: { onOpenDay: (idx: number) => void }) 
               <span
                 className={cn(
                   "w-full rounded-t-[3px] transition-all group-hover:brightness-125",
-                  d.total >= 0 ? "bg-profit/70" : "bg-loss/70"
+                  d.total >= 0 ? "bg-profit" : "bg-loss"
                 )}
                 style={{ height: h + "%" }}
               />

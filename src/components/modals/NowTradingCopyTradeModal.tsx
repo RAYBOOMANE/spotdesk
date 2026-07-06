@@ -28,7 +28,6 @@ export function NowTradingCopyTradeModal({
   onClose: () => void;
 }) {
   const store = useStore();
-  const { state } = store;
   const dialogs = useDialogs();
   const [grossTotal, setGrossTotal] = useState("");
   const n = ids.length;
@@ -47,23 +46,21 @@ export function NowTradingCopyTradeModal({
   };
 
   // +Invest is NOT an outcome (same as the individual card's quick action):
-  // it deposits more capital into each account's OWN existing position via
-  // setDaySingle, per account — never multiSetDay, which would blunt-reset
-  // every account in the group to the SAME cost/extra and discard whatever
-  // each one individually already had. The typed TOTAL is split evenly, then
-  // ADDED on top of each account's own current extra, preserving its own cost.
+  // it deposits more capital into each account's OWN existing position,
+  // never multiSetDay (which would blunt-reset every account to the SAME
+  // cost/extra). The typed TOTAL is split evenly, then ADDED on top of each
+  // account's own current extra — via copyTradeInvest, ONE atomic call that
+  // updates every account in a single pure-function pass. Looping N separate
+  // store.setDaySingle calls here would silently drop every update but the
+  // last one (each call now flushes to disk immediately, and React collapses
+  // the resulting synchronous setState calls down to just the final one).
   const investAll = () => {
     const total = parseMaybe(grossTotal);
     if (!grossTotal.trim() || total == null || total <= 0) {
       void dialogs.alert("Enter an amount to add to these accounts first.");
       return;
     }
-    const perAccountAmt = total / n;
-    ids.forEach((id) => {
-      const sp = state.spots[id];
-      if (!sp) return;
-      store.setDaySingle(id, day, sp.cost, (sp.extra || 0) + perAccountAmt);
-    });
+    store.copyTradeInvest(ids, total);
     setGrossTotal("");
     onClose();
   };

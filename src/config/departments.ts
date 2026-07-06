@@ -15,6 +15,7 @@ import {
   ListPlus,
   ListTodo,
   ScrollText,
+  ShieldCheck,
   Target,
   UserCog,
   Users,
@@ -58,6 +59,7 @@ export const DEPARTMENT_TABS: Record<Department, TabMeta[]> = {
     { key: "managers", label: "Managers", icon: UserCog },
     { key: "money-held", label: "Money Held", icon: Landmark },
     { key: "objectives", label: "Objectives", icon: Target },
+    { key: "data-safety", label: "Data Safety", icon: ShieldCheck },
   ],
   accounting: [{ key: "overview", label: "Overview", icon: LayoutDashboard }],
   secretary: [

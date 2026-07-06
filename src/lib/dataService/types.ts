@@ -8,11 +8,21 @@ export interface SaveResult {
   ok: boolean;
 }
 
+// A restore point: label = a human-readable reason ("before-import-...",
+// "manual-...", a New Day marker), createdAt = when it was taken.
+export interface SnapshotMeta {
+  id: number;
+  label: string;
+  createdAt: string;
+}
+
 // State load/save/snapshot — the "where does the live app_state blob live" concern.
 export interface StateStorageAdapter {
   loadState(): Promise<AppState | null>;
   saveState(state: AppState): Promise<SaveResult>;
   saveSnapshot(label: string, state: AppState): Promise<void>;
+  listSnapshots(): Promise<SnapshotMeta[]>;
+  loadSnapshot(id: number): Promise<AppState | null>;
 }
 
 // File-based backups — a SEPARATE concern from state storage. A future

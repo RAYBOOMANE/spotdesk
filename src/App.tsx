@@ -14,6 +14,7 @@ import { CeoOverviewView } from "@/views/CeoOverviewView";
 import { CeoClientsView } from "@/views/CeoClientsView";
 import { ManagersView } from "@/views/ManagersView";
 import { MoneyHeldView } from "@/views/MoneyHeldView";
+import { DataSafetyView } from "@/views/DataSafetyView";
 import { AccountingLedgerView } from "@/views/AccountingLedgerView";
 import { TaskListView } from "@/views/TaskListView";
 import { NewTaskView } from "@/views/NewTaskView";
@@ -91,6 +92,7 @@ export default function App() {
         {department === "ceo-office" && tab === "managers" && <ManagersView />}
         {department === "ceo-office" && tab === "money-held" && <MoneyHeldView />}
         {department === "ceo-office" && tab === "objectives" && <ObjectivesView />}
+        {department === "ceo-office" && tab === "data-safety" && <DataSafetyView />}
         {department === "accounting" && <AccountingLedgerView onOpenDay={openDay} />}
 
         {department === "secretary" && tab === "today" && <TaskListView filter="today" />}

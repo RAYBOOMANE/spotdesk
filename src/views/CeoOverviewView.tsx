@@ -1,8 +1,9 @@
 import { useStore } from "@/store/StoreProvider";
-import { computeTopStats, periodTotals } from "@/lib/stats";
+import { computeTopStats, periodTotals, allTimeAverages } from "@/lib/stats";
 import { signed, cn } from "@/lib/utils";
 import { Card } from "@/components/ui/card";
 import { ProgressRow, targetStatus } from "@/components/dashboard/ProgressRow";
+import { EquityCurve } from "@/components/EquityCurve";
 
 function PnlCard({ label, value }: { label: string; value: number }) {
   return (
@@ -19,6 +20,7 @@ export function CeoOverviewView() {
   const { state } = useStore();
   const s = computeTopStats(state);
   const p = periodTotals(state);
+  const avg = allTimeAverages(state);
   const obj = state.objectives;
 
   const daily = { ...targetStatus(p.today, obj.dailyTarget), targetLabel: obj.dailyTarget ? `target ${signed(obj.dailyTarget)}` : "no target set" };
@@ -59,6 +61,35 @@ export function CeoOverviewView() {
           <div className="mt-1 font-mono text-data-xs text-faint">forward EV</div>
         </Card>
       </div>
+
+      <EquityCurve />
+
+      <Card className="p-5">
+        <div className="mb-4 font-mono text-micro font-medium uppercase tracking-[0.14em] text-dim">
+          All-time averages
+        </div>
+        <div className="grid grid-cols-3 gap-4">
+          <div>
+            <div className="mb-1 font-mono text-micro font-medium uppercase tracking-[0.1em] text-dim">Per day</div>
+            <div className={cn("font-mono text-data-lg font-bold", avg.avgDaily >= 0 ? "text-profit" : "text-loss")}>
+              {signed(Math.round(avg.avgDaily))}
+            </div>
+          </div>
+          <div>
+            <div className="mb-1 font-mono text-micro font-medium uppercase tracking-[0.1em] text-dim">Per week</div>
+            <div className={cn("font-mono text-data-lg font-bold", avg.avgWeekly >= 0 ? "text-profit" : "text-loss")}>
+              {signed(Math.round(avg.avgWeekly))}
+            </div>
+          </div>
+          <div>
+            <div className="mb-1 font-mono text-micro font-medium uppercase tracking-[0.1em] text-dim">Per month</div>
+            <div className={cn("font-mono text-data-lg font-bold", avg.avgMonthly >= 0 ? "text-profit" : "text-loss")}>
+              {signed(Math.round(avg.avgMonthly))}
+            </div>
+          </div>
+        </div>
+        {avg.dayCount === 0 && <div className="mt-2 font-mono text-data-xs text-faint">No banked days yet.</div>}
+      </Card>
 
       <Card className="p-5">
         <div className="mb-4 font-mono text-micro font-medium uppercase tracking-[0.14em] text-dim">

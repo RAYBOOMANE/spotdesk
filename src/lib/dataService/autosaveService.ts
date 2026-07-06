@@ -36,3 +36,18 @@ export async function flushSave(onResult?: (ok: boolean) => void) {
     onResult?.(ok);
   }
 }
+
+// Save `state` right now, bypassing the 250ms debounce entirely, and cancel
+// any pending debounced write so it can't redundantly race behind this one.
+// Used for critical actions (a logged blow/payout, a delete, an edit — see
+// StoreProvider's applyAndFlush) where waiting even 250ms risks losing the
+// entry to a crash/quit in between.
+export async function saveImmediately(state: AppState, onResult: (ok: boolean) => void) {
+  if (timer) {
+    clearTimeout(timer);
+    timer = null;
+  }
+  pending = null;
+  const ok = (await getStorageAdapter().saveState(state)).ok;
+  onResult(ok);
+}

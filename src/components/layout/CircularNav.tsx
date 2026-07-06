@@ -15,8 +15,8 @@ export function CircularNav<T extends string>({
   items,
   onSelect,
   center,
-  radius = 128,
-  nodeSize = 88,
+  radius = 140,
+  nodeSize = 96,
 }: {
   items: CircularNavItem<T>[];
   onSelect: (key: T) => void;
@@ -62,8 +62,8 @@ export function CircularNav<T extends string>({
                   "animate-in fade-in zoom-in-95 duration-300"
                 )}
               >
-                <Icon className="h-5 w-5" />
-                <span className="text-[0.68rem] font-medium">{label}</span>
+                <Icon className="h-[22px] w-[22px]" />
+                <span className="text-[0.72rem] font-medium">{label}</span>
               </button>
             </li>
           );

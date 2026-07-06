@@ -7,7 +7,7 @@
 import type { AppState } from "@/lib/types";
 import { normalizeImport } from "@/lib/logic";
 import { isTauri } from "./platform";
-import type { SaveResult, StateStorageAdapter } from "./types";
+import type { SaveResult, SnapshotMeta, StateStorageAdapter } from "./types";
 
 const WEB_KEY = "spotdesk_v2"; // same key the old HTML app used — dev fallback only
 
@@ -93,7 +93,8 @@ async function saveState(state: AppState): Promise<SaveResult> {
   }
 }
 
-// Point-in-time snapshot in SQLite (taken on every New Day).
+// Point-in-time snapshot in SQLite (taken on every New Day, plus restore
+// points before import/reset/New Day — see StoreProvider).
 async function saveSnapshot(label: string, state: AppState): Promise<void> {
   if (!isTauri) return;
   try {
@@ -112,8 +113,39 @@ async function saveSnapshot(label: string, state: AppState): Promise<void> {
   }
 }
 
+// List recent restore points, newest first — for the Data Safety panel.
+// Same existing table, just a read query; no schema change.
+async function listSnapshots(): Promise<SnapshotMeta[]> {
+  if (!isTauri) return [];
+  try {
+    const db = await getDb();
+    const rows = await db.select<{ id: number; label: string; created_at: string }[]>(
+      "SELECT id, label, created_at FROM snapshots ORDER BY id DESC LIMIT 20"
+    );
+    return (rows || []).map((r) => ({ id: r.id, label: r.label, createdAt: r.created_at }));
+  } catch (e) {
+    console.error("listSnapshots failed", e);
+    return [];
+  }
+}
+
+async function loadSnapshot(id: number): Promise<AppState | null> {
+  if (!isTauri) return null;
+  try {
+    const db = await getDb();
+    const rows = await db.select<{ data: string }[]>("SELECT data FROM snapshots WHERE id = $1", [id]);
+    if (rows && rows.length > 0) return normalizeImport(JSON.parse(rows[0].data));
+    return null;
+  } catch (e) {
+    console.error("loadSnapshot failed", e);
+    return null;
+  }
+}
+
 export const localStorageAdapter: StateStorageAdapter = {
   loadState,
   saveState,
   saveSnapshot,
+  listSnapshots,
+  loadSnapshot,
 };

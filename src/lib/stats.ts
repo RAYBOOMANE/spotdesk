@@ -455,3 +455,22 @@ export function secretaryTasks(state: AppState, filter: SecretaryFilter, now: Da
     return a.createdAt < b.createdAt ? 1 : -1;
   });
 }
+
+// ── CEO Office → all-time averages ────────────────────────────────────
+// A simple per-day average of the all-time total, scaled up for the
+// weekly/monthly figures -- an informational display stat, not a business
+// rule (doesn't affect any trading calculation).
+export interface AllTimeAverages {
+  avgDaily: number;
+  avgWeekly: number;
+  avgMonthly: number;
+  dayCount: number;
+}
+export function allTimeAverages(state: AppState, now: Date = new Date()): AllTimeAverages {
+  const { allTime } = periodTotals(state, now);
+  const todayHasEntries = state.todayLog.length > 0;
+  const dayCount = state.history.length + (todayHasEntries ? 1 : 0);
+  if (dayCount === 0) return { avgDaily: 0, avgWeekly: 0, avgMonthly: 0, dayCount: 0 };
+  const avgDaily = allTime / dayCount;
+  return { avgDaily, avgWeekly: avgDaily * 7, avgMonthly: avgDaily * 30, dayCount };
+}

@@ -31,7 +31,12 @@ export function AppShell({
       <div className="flex min-w-0 flex-1 flex-col">
         <Header />
         <main className="flex-1 overflow-y-auto">
-          <div className="mx-auto flex min-h-full max-w-[1400px] flex-col gap-6 px-6 py-6">{children}</div>
+          <div
+            key={`${department}-${tab}`}
+            className="mx-auto flex min-h-full max-w-[1400px] animate-in fade-in slide-in-from-bottom-1 flex-col gap-6 px-6 py-6 duration-200 ease-out"
+          >
+            {children}
+          </div>
         </main>
         <footer className="border-t border-line bg-panel px-6 py-3">
           <FooterActions />

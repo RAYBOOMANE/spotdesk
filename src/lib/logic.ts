@@ -316,6 +316,28 @@ export function copyTradeOutcome(
   return st;
 }
 
+// Copy-trade "add investment": splits totalAmount evenly across ids and ADDS
+// each account's own share on top of its EXISTING extra (never resets cost)
+// — the shared calculation path for both Now Trading's and Clients tab's
+// "+ Invest all". Deliberately ONE atomic pure-function call chaining
+// setDaySingle on a single local `st` (reused verbatim, so identical
+// quirks/behavior), rather than the UI looping N separate store calls: each
+// setDaySingle call is now flushed to disk immediately (applyAndFlush), and
+// React batches multiple synchronous setState calls from a component-level
+// loop into just the LAST one's result — every earlier iteration's update
+// would silently be discarded. Doing the whole loop inside one pure function
+// sidesteps that entirely.
+export function copyTradeInvest(state: AppState, ids: string[], totalAmount: number): AppState {
+  let st = clone(state);
+  const perAccount = totalAmount / ids.length;
+  ids.forEach((id) => {
+    const sp = st.spots[id];
+    if (!sp) return;
+    st = setDaySingle(st, id, sp.day, sp.cost, (sp.extra || 0) + perAccount);
+  });
+  return st;
+}
+
 // ── Delete / undo a logged entry ─────────────────────────────────────
 export function deleteLog(state: AppState, idx: number): AppState {
   const st = clone(state);

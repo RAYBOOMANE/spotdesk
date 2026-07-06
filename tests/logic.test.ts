@@ -48,6 +48,7 @@ import {
   resetTaskProgressToAuto,
   taskProgress,
   copyTradeOutcome,
+  copyTradeInvest,
 } from "../src/lib/logic";
 import {
   computeTopStats,
@@ -59,6 +60,7 @@ import {
   packageGroups,
   ledgerAuthoritativeTotals,
   secretaryTasks,
+  allTimeAverages,
 } from "../src/lib/stats";
 
 let pass = 0;
@@ -822,6 +824,100 @@ check("Adding extra investment as a SEPARATE later step (not at initial deploy) 
   st2 = copyTradeOutcome(st2, ["2-1"], "blew", 500);
   assert.equal(st2.todayLog[0].sunk, spA.cost + 60);
   assert.equal(st2.todayProfit, 500 - (spA.cost + 60));
+});
+
+check("allTimeAverages: simple per-day average over banked days, scaled for week/month", () => {
+  let st = freshState();
+  st = logOutcomeSingle(st, "1-1", 3, "blew", null, null, 700);
+  st = rollDay(st, "2026-07-01T12:00:00.000Z");
+  st = editHistoryDay(st, 0, { profit: 100, payouts: 0, payoutGross: 0, deployed: 0, blownOverride: 1 }); // day1 total=100
+  st = logOutcomeSingle(st, "1-1", 3, "blew", null, null, 700);
+  st = rollDay(st, "2026-07-02T12:00:00.000Z");
+  st = editHistoryDay(st, 1, { profit: 200, payouts: 0, payoutGross: 0, deployed: 0, blownOverride: 1 }); // day2 total=200
+
+  const avg = allTimeAverages(st);
+  assert.equal(avg.dayCount, 2);
+  assert.equal(avg.avgDaily, 150); // (100+200)/2
+  assert.equal(avg.avgWeekly, 1050); // 150*7
+  assert.equal(avg.avgMonthly, 4500); // 150*30
+});
+
+check("allTimeAverages: today's live (unbanked) log counts as a day; no data at all returns zeros", () => {
+  let st = freshState();
+  assert.deepEqual(allTimeAverages(st), { avgDaily: 0, avgWeekly: 0, avgMonthly: 0, dayCount: 0 });
+  st = logOutcomeSingle(st, "1-1", 3, "blew", null, null, 700); // +27, still today, not banked
+  const avg = allTimeAverages(st);
+  assert.equal(avg.dayCount, 1);
+  assert.equal(avg.avgDaily, 27);
+});
+
+check("copyTradeInvest: $100 split across 2 accounts -> +$50 each (the reported bug's exact scenario)", () => {
+  let st = freshState();
+  st = setDaySingle(st, "1-1", 1, null, null); // fresh deploy, benchmark cost 95
+  st = setDaySingle(st, "1-2", 1, null, null);
+  st = copyTradeInvest(st, ["1-1", "1-2"], 100);
+  assert.equal(st.spots["1-1"].extra, 50);
+  assert.equal(st.spots["1-2"].extra, 50); // NOT 0 -- this was the exact bug
+  assert.equal(st.spots["1-1"].cost + st.spots["1-1"].extra, 145);
+  assert.equal(st.spots["1-2"].cost + st.spots["1-2"].extra, 145);
+});
+
+check("copyTradeInvest: $100 split across 4 accounts -> +$25 each", () => {
+  let st = freshState();
+  const ids = ["1-1", "1-2", "1-3", "1-4"];
+  ids.forEach((id) => (st = setDaySingle(st, id, 1, null, null)));
+  st = copyTradeInvest(st, ids, 100);
+  ids.forEach((id) => assert.equal(st.spots[id].extra, 25));
+});
+
+check("copyTradeInvest: adding a split onto accounts with DIFFERENT existing invested amounts adds on top of each", () => {
+  let st = freshState();
+  st = setDaySingle(st, "1-1", 1, 95, 0); // 95 total invested
+  st = setDaySingle(st, "1-2", 1, 95, 60); // 155 total invested
+  st = copyTradeInvest(st, ["1-1", "1-2"], 100); // +50 each
+  assert.equal(st.spots["1-1"].cost + st.spots["1-1"].extra, 145); // 95 -> 145
+  assert.equal(st.spots["1-2"].cost + st.spots["1-2"].extra, 205); // 155 -> 205 (the brief's exact example)
+});
+
+check("copyTradeInvest: every selected account receives exactly one update, regardless of array position", () => {
+  let st = freshState();
+  st = setDaySingle(st, "1-1", 1, 95, 0);
+  st = setDaySingle(st, "1-2", 1, 95, 20);
+  st = setDaySingle(st, "1-3", 1, 95, 40);
+  st = copyTradeInvest(st, ["1-1", "1-2", "1-3"], 90); // +30 each
+  assert.equal(st.spots["1-1"].extra, 30); // first in array
+  assert.equal(st.spots["1-2"].extra, 50); // middle
+  assert.equal(st.spots["1-3"].extra, 70); // last in array -- none dropped
+});
+
+check("copyTradeInvest is the ONE shared calculation path -- identical inputs always produce identical results", () => {
+  // Now Trading's and the Clients tab's copy-trade modals both call this
+  // same exported function (see NowTradingCopyTradeModal.tsx / MultiLogModal.tsx);
+  // this locks in that it's pure/deterministic, so there's no way for the
+  // two UI surfaces to diverge now that neither loops separate store calls.
+  let stateA = freshState();
+  stateA = setDaySingle(stateA, "1-1", 1, 95, 0);
+  stateA = setDaySingle(stateA, "1-2", 1, 95, 60);
+  let stateB = freshState();
+  stateB = setDaySingle(stateB, "1-1", 1, 95, 0);
+  stateB = setDaySingle(stateB, "1-2", 1, 95, 60);
+  const resultA = copyTradeInvest(stateA, ["1-1", "1-2"], 100);
+  const resultB = copyTradeInvest(stateB, ["1-1", "1-2"], 100);
+  assert.deepEqual(resultA.spots, resultB.spots);
+});
+
+check("copyTradeOutcome after copyTradeInvest nets against each account's FULL current invested amount", () => {
+  let st = freshState();
+  st = setDaySingle(st, "1-1", 1, 95, 0);
+  st = setDaySingle(st, "1-2", 1, 95, 60);
+  st = copyTradeInvest(st, ["1-1", "1-2"], 100); // -> 145 and 205 invested
+  st = copyTradeOutcome(st, ["1-1", "1-2"], "blew", 200); // 200 gross each
+  const logA = st.todayLog.find((l) => l.id === "1-1")!;
+  const logB = st.todayLog.find((l) => l.id === "1-2")!;
+  assert.equal(logA.sunk, 145);
+  assert.equal(logA.profit, 55); // 200-145, NOT 200-95=105
+  assert.equal(logB.sunk, 205);
+  assert.equal(logB.profit, -5); // 200-205, NOT 200-155=45
 });
 
 console.log(`\nAll ${pass} checks passed.`);
