@@ -62,6 +62,7 @@ import {
   secretaryTasks,
   allTimeAverages,
   openSessionCapital,
+  tradingWeekOf,
 } from "../src/lib/stats";
 
 let pass = 0;
@@ -250,6 +251,142 @@ check("periodTotals: today/week/month/allTime sum archived + live totals", () =>
   assert.equal(p.week, 27 + 620);
   assert.equal(p.month, 27 + 620);
   assert.equal(p.allTime, 27 + 620);
+});
+
+check("tradingWeekOf: fixed 5-day operational blocks (Week 1 = Days 1-5, Week 2 = 6-10, ...)", () => {
+  assert.equal(tradingWeekOf(1), 1);
+  assert.equal(tradingWeekOf(3), 1);
+  assert.equal(tradingWeekOf(5), 1);
+  assert.equal(tradingWeekOf(6), 2);
+  assert.equal(tradingWeekOf(8), 2);
+  assert.equal(tradingWeekOf(10), 2);
+  assert.equal(tradingWeekOf(11), 3);
+  assert.equal(tradingWeekOf(15), 3);
+  assert.equal(tradingWeekOf(16), 4);
+  assert.equal(tradingWeekOf(17), 4);
+  assert.equal(tradingWeekOf(20), 4);
+  assert.equal(tradingWeekOf(21), 5);
+});
+
+// Helper: roll N operational days in a row, each with a fixed, distinct
+// total (via editHistoryDay so the exact figure is deterministic and not
+// dependent on ladder math). Returns the state positioned with day N+1
+// in progress (today).
+function rollDaysWithTotals(totals: number[]): ReturnType<typeof freshState> {
+  let st = freshState();
+  totals.forEach((total, i) => {
+    st = logOutcomeSingle(st, "1-1", 3, "blew", null, null, 700); // any nonzero log so rollDay has something to archive
+    st = rollDay(st, `2026-07-${String(i + 1).padStart(2, "0")}T12:00:00.000Z`);
+    st = editHistoryDay(st, i, { profit: total, payouts: 0, payoutGross: 0, deployed: 0, blownOverride: 1 });
+  });
+  return st;
+}
+
+check("periodTotals.week: fixed trading-week block excludes days outside the current block (old trailing-7 window would have leaked in days 1-5)", () => {
+  const st = rollDaysWithTotals([10, 20, 30, 40, 50, 60, 70]); // days 1-7 archived, day 8 in progress
+  assert.equal(st.dayCount, 8);
+  assert.equal(tradingWeekOf(st.dayCount), 2); // week 2 = days 6-10
+  const p = periodTotals(st, new Date("2026-07-10T12:00:00Z"));
+  assert.equal(p.week, 60 + 70); // only days 6 & 7 -- NOT the old slice(-7) sum of 280
+  assert.equal(p.allTime, 10 + 20 + 30 + 40 + 50 + 60 + 70);
+});
+
+check("periodTotals.week: partial current week includes only the days actually archived so far in that block", () => {
+  let st = rollDaysWithTotals([100, 200]); // days 1-2 archived, day 3 in progress (week 1 = days 1-5)
+  assert.equal(tradingWeekOf(st.dayCount), 1);
+  st = logOutcomeSingle(st, "1-1", 3, "blew", null, null, 700); // some live total today
+  const p = periodTotals(st, new Date("2026-07-10T12:00:00Z"));
+  assert.equal(p.week, 100 + 200 + p.today); // whole week is still open, so week === allTime here
+  assert.equal(p.week, p.allTime);
+});
+
+check("trading week totals stay fixed forever once the block is archived, even as later weeks accumulate", () => {
+  const weekOneTotal = (st: ReturnType<typeof freshState>) =>
+    st.history.filter((d) => tradingWeekOf(d.day) === 1).reduce((s, d) => s + (d.total || 0), 0);
+
+  let st = rollDaysWithTotals([1, 2, 3, 4, 5]); // exactly fills week 1 (days 1-5), day 6 in progress
+  const afterWeekOne = weekOneTotal(st);
+  assert.equal(afterWeekOne, 15);
+
+  st = rollDaysWithTotals([1, 2, 3, 4, 5, 6, 7, 8]); // week 1 archived + into week 2/3
+  assert.equal(weekOneTotal(st), afterWeekOne); // unchanged by later weeks being archived
+});
+
+check("periodTotals.week and packageGroups week stay consistent for the current trading-week window", () => {
+  let st = freshState();
+  st = logOutcomeSingle(st, "1-1", 3, "blew", null, null, 700);
+  st = logOutcomeSingle(st, "2-1", 3, "blew", null, null, 700);
+  st = rollDay(st, "2026-07-01T12:00:00.000Z"); // day 1 archived
+  st = logOutcomeSingle(st, "1-2", 11, "payout", 280, null, 900);
+  st = rollDay(st, "2026-07-02T12:00:00.000Z"); // day 2 archived
+  st = logOutcomeSingle(st, "3-1", 1, "blew", null, null, 500); // live today
+
+  const p = periodTotals(st, new Date("2026-07-05T12:00:00Z"));
+  const pkgWeekSum = packageGroups(st).reduce((sum, g) => sum + g.week, 0);
+  assert.equal(p.week, pkgWeekSum); // no editHistoryDay override in this scenario, so d.total === sum(netOfLog)
+});
+
+check("periodTotals.month: only archived days dated within the current calendar month count", () => {
+  let st = freshState();
+  st = logOutcomeSingle(st, "1-1", 3, "blew", null, null, 700);
+  st = rollDay(st, "2026-06-30T23:00:00.000Z"); // June -- must NOT count toward July's month total
+  st = editHistoryDay(st, 0, { profit: 999, payouts: 0, payoutGross: 0, deployed: 0, blownOverride: 1 });
+  st = logOutcomeSingle(st, "1-1", 3, "blew", null, null, 700);
+  st = rollDay(st, "2026-07-05T12:00:00.000Z"); // July -- must count
+  st = editHistoryDay(st, 1, { profit: 111, payouts: 0, payoutGross: 0, deployed: 0, blownOverride: 1 });
+
+  const p = periodTotals(st, new Date("2026-07-10T12:00:00Z"));
+  assert.equal(p.month, 111); // excludes June's 999
+  assert.equal(p.allTime, 999 + 111); // allTime is unaffected by the month window
+});
+
+check("periodTotals.month: a row dated in the NEXT month is excluded (upper bound) -- matters once multi-month history is imported", () => {
+  let st = freshState();
+  st = logOutcomeSingle(st, "1-1", 3, "blew", null, null, 700);
+  st = rollDay(st, new Date(2026, 6, 15, 12, 0).toISOString()); // July 15 -- the month being viewed
+  st = editHistoryDay(st, 0, { profit: 111, payouts: 0, payoutGross: 0, deployed: 0, blownOverride: 1 });
+  st = logOutcomeSingle(st, "1-1", 3, "blew", null, null, 700);
+  st = rollDay(st, new Date(2026, 7, 1, 0, 5).toISOString()); // Aug 1, just past midnight -- next month
+  st = editHistoryDay(st, 1, { profit: 999, payouts: 0, payoutGross: 0, deployed: 0, blownOverride: 1 });
+
+  const p = periodTotals(st, new Date(2026, 6, 20, 12, 0)); // viewed from within July
+  assert.equal(p.month, 111); // August's 999 must NOT leak into July's total
+  assert.equal(p.allTime, 111 + 999); // allTime still sees everything
+});
+
+check("rollDay archives the exact click instant -- no hidden midnight/day-rollover cutoff (explicit product decision)", () => {
+  let st = freshState();
+  st = logOutcomeSingle(st, "1-1", 3, "blew", null, null, 700);
+  // Local wall-clock construction (not a hand-picked UTC string) so this
+  // test is deterministic regardless of the machine's timezone -- rollDay's
+  // real default (`new Date().toISOString()`) is likewise always a local
+  // click moment, just serialized to UTC.
+  const rolledAt = new Date(2026, 7, 1, 0, 5); // Aug 1, 00:05 local -- 5 minutes after local midnight
+  st = rollDay(st, rolledAt.toISOString());
+  st = editHistoryDay(st, 0, { profit: 42, payouts: 0, payoutGross: 0, deployed: 0, blownOverride: 1 });
+
+  // Viewed later the same local day, the late-night session counts toward
+  // August -- the calendar month it was literally stamped in, with no
+  // attempt to infer "the trading day really meant to be July 31".
+  const august = periodTotals(st, new Date(2026, 7, 1, 9, 0));
+  assert.equal(august.month, 42);
+  // And it's scoped to August specifically, not "whatever's most recent":
+  // a later month no longer counts it.
+  const september = periodTotals(st, new Date(2026, 8, 1, 9, 0));
+  assert.equal(september.month, 0);
+});
+
+check("legacy imports with a missing history date: excluded from month totals, but week/allTime are unaffected (they key off day #, not date)", () => {
+  let st = freshState();
+  st = logOutcomeSingle(st, "1-1", 3, "blew", null, null, 700);
+  st = rollDay(st, "2026-07-01T12:00:00.000Z");
+  st = editHistoryDay(st, 0, { profit: 250, payouts: 0, payoutGross: 0, deployed: 0, blownOverride: 1 });
+  delete st.history[0].date; // simulate a legacy backup that never recorded a date
+
+  const p = periodTotals(st, new Date("2026-07-10T12:00:00Z"));
+  assert.equal(p.month, 0); // dateless day excluded from calendar-month math (unchanged, pre-existing behavior)
+  assert.equal(p.week, 250); // week math is day-number based, unaffected by the missing date
+  assert.equal(p.allTime, 250); // allTime never filters by date
 });
 
 check("setManagerSplit/setManagerName: roundtrip, clamped 0-100, defaults from palette", () => {

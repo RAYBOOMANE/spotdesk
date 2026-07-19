@@ -2,8 +2,44 @@
 
 import { LADDER, PACKAGE_COLORS, type Zone } from "./ladder";
 import { clusterOf, colorOf, fwdEV, gridDims, managerOf, netOfLog, PhaseFilter, todayTotals } from "./logic";
-import { N_CLUSTERS, ACCTS_PER_CLUSTER } from "./ladder";
-import type { AppState, LogEntry, MoneyHeldEntry, OutcomeType, Task } from "./types";
+import { N_CLUSTERS, ACCTS_PER_CLUSTER, TRADING_WEEK_LENGTH } from "./ladder";
+import type { AppState, HistoryDay, LogEntry, MoneyHeldEntry, OutcomeType, Task } from "./types";
+
+// ── Fixed operational trading weeks (NOT a rolling window, NOT calendar
+// weeks) ───────────────────────────────────────────────────────────────
+// Week N = operational days ((N-1)*5+1)..(N*5): Week 1 = Days 1-5, Week 2 =
+// Days 6-10, etc. The current week is whichever block contains the
+// in-progress day (state.dayCount), even if that block isn't full yet.
+// Once a day is archived its week never changes (pure function of day #),
+// so completed weeks stay fixed forever for historical comparison.
+export function tradingWeekOf(day: number): number {
+  return Math.ceil(day / TRADING_WEEK_LENGTH);
+}
+
+// Archived days belonging to the same fixed trading-week block as the
+// in-progress day. Shared by periodTotals (CEO Office) and packageGroups
+// (Trading Floor / manager summaries) so both windows can never drift apart.
+function historyInCurrentTradingWeek(state: AppState): HistoryDay[] {
+  const currentWeek = tradingWeekOf(state.dayCount);
+  return (state.history || []).filter((d) => tradingWeekOf(d.day) === currentWeek);
+}
+
+// ── Calendar month window (first-of-month through now) ─────────────────
+function calendarMonthStart(now: Date): Date {
+  return new Date(now.getFullYear(), now.getMonth(), 1);
+}
+
+// Archived days dated within the current calendar month: >= the 1st of
+// this month and strictly < the 1st of next month. Days missing a `date`
+// (older/legacy imports) are excluded. The upper bound matters once
+// historical data spanning multiple months is imported -- without it, a
+// future-dated row (relative to whatever `now` is passed) would leak into
+// every month's total from here on out.
+function historyInCurrentMonth(state: AppState, now: Date): HistoryDay[] {
+  const monthStart = calendarMonthStart(now);
+  const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+  return (state.history || []).filter((d) => d.date && new Date(d.date) >= monthStart && new Date(d.date) < monthEnd);
+}
 
 export interface TopStats {
   deployed: number;
@@ -47,11 +83,11 @@ export function computeTopStats(state: AppState, now: Date = new Date()): TopSta
 
   const blewCount = state.todayLog.filter((l) => l.type === "blew").length;
 
-  // Payouts THIS MONTH = archived days in current month + today
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  // Payouts THIS MONTH = archived days in current calendar month + today
+  const monthStart = calendarMonthStart(now);
   let monthPayouts = 0;
-  (state.history || []).forEach((d) => {
-    if (d.date && new Date(d.date) >= monthStart) monthPayouts += d.payouts || 0;
+  historyInCurrentMonth(state, now).forEach((d) => {
+    monthPayouts += d.payouts || 0;
   });
   monthPayouts += todayTotals(state).payouts;
 
@@ -111,9 +147,11 @@ export function zoneCounts(state: AppState): Record<Zone, number> {
 }
 
 // Today/week/month/all-time P&L, used by Objectives and CEO Office Overview.
-// Week = last 7 archived days + today (matches packageGroups' "week" window).
-// Month = archived days since the 1st of the current calendar month + today
-// (matches computeTopStats' monthPayouts window, just on .total not .payouts).
+// Week = current fixed 5-day operational trading-week block + today (see
+// tradingWeekOf/historyInCurrentTradingWeek above; matches packageGroups'
+// "week" window). Month = archived days since the 1st of the current
+// calendar month + today (matches computeTopStats' monthPayouts window,
+// just on .total not .payouts).
 export interface PeriodTotals {
   today: number;
   week: number;
@@ -122,11 +160,8 @@ export interface PeriodTotals {
 }
 export function periodTotals(state: AppState, now: Date = new Date()): PeriodTotals {
   const today = todayTotals(state).total;
-  const week = state.history.slice(-7).reduce((sum, d) => sum + (d.total || 0), 0) + today;
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-  const month =
-    state.history.filter((d) => d.date && new Date(d.date) >= monthStart).reduce((sum, d) => sum + (d.total || 0), 0) +
-    today;
+  const week = historyInCurrentTradingWeek(state).reduce((sum, d) => sum + (d.total || 0), 0) + today;
+  const month = historyInCurrentMonth(state, now).reduce((sum, d) => sum + (d.total || 0), 0) + today;
   const allTime = state.history.reduce((sum, d) => sum + (d.total || 0), 0) + today;
   return { today, week, month, allTime };
 }
@@ -174,7 +209,8 @@ export function positionRows(state: AppState): PositionRow[] {
   return rows;
 }
 
-// Packages (clusters grouped by color). Week = last 7 archived days + today.
+// Packages (clusters grouped by color). Week = current fixed 5-day
+// operational trading-week block + today (see tradingWeekOf above).
 export interface PackageGroup {
   hex: string;
   name: string;
@@ -195,7 +231,7 @@ export function packageGroups(state: AppState): PackageGroup[] {
     const hex = colorOf(state, clusterOf(w.id));
     if (groups[hex]) groups[hex].today += netOfLog(w);
   });
-  const recent = state.history.slice(-7);
+  const recent = historyInCurrentTradingWeek(state);
   recent.forEach((d) => {
     (d.log || []).forEach((w) => {
       const hex = colorOf(state, clusterOf(w.id));

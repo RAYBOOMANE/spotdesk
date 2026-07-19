@@ -58,6 +58,11 @@ export const FWD: Record<number, number> = {
 export const N_CLUSTERS = 17;
 export const ACCTS_PER_CLUSTER = 5;
 
+// Fixed operational trading-week length. Week N = operational days
+// ((N-1)*WEEK_LENGTH + 1) .. (N*WEEK_LENGTH), e.g. 1-5, 6-10, 11-15 -- NOT a
+// rolling window and NOT a calendar week. See stats.ts's tradingWeekOf().
+export const TRADING_WEEK_LENGTH = 5;
+
 // Package colors — clusters sharing a color form a package
 export const PACKAGE_COLORS = [
   { name: "Teal", hex: "#00e2a0" },

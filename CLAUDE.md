@@ -42,8 +42,16 @@ Invariants that MUST hold (all covered by `npm run test:logic`):
 - **Total = blow profit + payout PROFIT.** Gross payout never contributes.
 - **Capacity denom** = `capacityTarget>0 ? capacityTarget : 17×5`. Grid dims
   come from `capClusters/capAccts` (fallback 17/5).
-- **Packages** = clusters grouped by color hex; week net = last 7 archived
-  days' logs + today.
+- **Packages** = clusters grouped by color hex; week net = current fixed
+  5-day operational trading-week block's logs + today (`tradingWeekOf` in
+  `stats.ts` — Week 1 = Days 1–5, Week 2 = Days 6–10, etc.; NOT a rolling
+  window, NOT a calendar week).
+- **CEO Office week/month** (`periodTotals`, `computeTopStats.monthPayouts`)
+  mirror the same fixed trading-week rule for "week", and use the real
+  calendar month (1st through last day, via each archived day's `date`) for
+  "month" — never "4 trading weeks". Days missing `date` (legacy imports)
+  are excluded from month totals only; week totals are unaffected since they
+  key off `day`, not `date`.
 - **Import** requires `data.spots && data.history`; `normalizeImport` backfills
   missing fields. It must read `tests/fixture_day4.json`
   (= the user's `spotdesk_day4_repaired.json`) → Day 4, 28 live, 20 named
